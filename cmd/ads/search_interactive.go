@@ -78,10 +78,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
+		switch msg.String() {
+		case "ctrl+c", "esc":
 			return m, tea.Quit
-		case tea.KeyEnter:
+		case "enter":
 			if len(m.results) > 0 && m.cursor < len(m.results) {
 				selected := cleanSnippet(m.results[m.cursor].Snippet)
 				selected = strings.ReplaceAll(selected, "\033[31m", "")
@@ -90,12 +90,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_ = cmd.Run()
 			}
 			return m, tea.Quit
-		case tea.KeyUp:
+		case "up", "ctrl+p", "ctrl+k":
 			if m.cursor > 0 {
 				m.cursor--
 			}
 			return m, nil
-		case tea.KeyDown:
+		case "down", "ctrl+n", "ctrl+j":
 			if m.cursor < len(m.results)-1 {
 				m.cursor++
 			}

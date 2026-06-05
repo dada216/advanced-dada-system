@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/advanced-dada-system/ads/internal/ansi"
 	"github.com/advanced-dada-system/ads/internal/search"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -84,8 +85,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if len(m.results) > 0 && m.cursor < len(m.results) {
 				selected := cleanSnippet(m.results[m.cursor].Snippet)
-				selected = strings.ReplaceAll(selected, "\033[31m", "")
-				selected = strings.ReplaceAll(selected, "\033[0m", "")
+				selected = ansi.Strip([]byte(selected))
 				cmd := exec.Command("tmux", "-L", "ads", "set-buffer", selected)
 				_ = cmd.Run()
 

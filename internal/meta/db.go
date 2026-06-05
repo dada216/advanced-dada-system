@@ -43,6 +43,9 @@ bind-key -n WheelDownPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "i
 # Provide native interactive federated search UI via floating popup
 bind-key -n C-s display-popup -E -w 90% -h 90% "{{.AdsBinaryPath}} search-interactive"
 
+# Global paste shortcut without prefix
+bind-key -n C-] paste-buffer
+
 # Optional: Source user's local config if it exists
 if-shell "test -f ~/.tmux.conf" "source-file ~/.tmux.conf"
 `

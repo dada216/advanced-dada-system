@@ -17,7 +17,7 @@ echo "Waiting for session to finish..."
 sleep 3
 
 echo "Checking DB..."
-if go run -tags sqlite_fts5 test/verify.go "$UUID"; then
+if go run -mod=vendor -tags sqlite_fts5 test/verify.go "$UUID"; then
     echo "Verification passed."
     
     echo "Testing session deletion..."

@@ -6,6 +6,11 @@ v0.1 implemented! Local sessions, raw recording, FTS5 dual-write, and federated 
 
 ## Agent Instructions / Coding Policies
 
+- **BUG TRACKING & GIT BRANCHING**:
+  1. All bug reports MUST be documented as `.md` files in the `docs/bugs/` directory BEFORE writing any code.
+  2. Fixes MUST be developed in a dedicated isolated Git branch (e.g., `git checkout -b fix/<bug-name>`).
+  3. Once the fix is built and verified via the `Makefile` pipeline, commit the fix to that specific branch.
+  4. Switch back to the main branch (`git checkout main`) and cleanly merge the fix branch (`git merge --no-ff fix/<bug-name>`) to integrate it into the mainline history.
 - **CODING STYLE**: You must strictly adhere to the guidelines codified in `llm/design/coding_style.md` (derived from Effective Go).
 - **MANDATORY**: ALWAYS run the `Makefile` verification pipeline (`make tidy`, `make lint`, `make build`, and `make test`/`make test-integration`) before committing code or declaring a milestone complete.
 - Do not bypass `golangci-lint` errors. If formatting (`gofmt`) or code logic fails, correct it proactively.

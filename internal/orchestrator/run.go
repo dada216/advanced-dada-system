@@ -8,6 +8,7 @@ import (
 	"text/template"
 
 	"github.com/advanced-dada-system/ads/internal/meta"
+	"github.com/advanced-dada-system/ads/internal/sessiondb"
 )
 
 func Run(name string) error {
@@ -20,6 +21,15 @@ func Run(name string) error {
 	session, err := db.GetSessionByName(name)
 	if err != nil {
 		return err
+	}
+
+	profileMeta, err := db.GetProfileMetadata(session.Profile)
+	if err == nil {
+		sdb, serr := sessiondb.Open(session.UUID)
+		if serr == nil {
+			_ = sdb.InjectMetadata(profileMeta.Customer, profileMeta.Server, profileMeta.Project)
+			sdb.Close()
+		}
 	}
 
 	// Check if tmux session already exists natively in our isolated 'ads' server

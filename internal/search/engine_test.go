@@ -12,7 +12,7 @@ import (
 func TestFederatedSearchAllSessions(t *testing.T) {
 	// Setup a clean test environment
 	t.Setenv("HOME", t.TempDir())
-	
+
 	// Initialize Meta DB
 	metaDB, err := meta.Open()
 	if err != nil {
@@ -25,7 +25,7 @@ func TestFederatedSearchAllSessions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create session A: %v", err)
 	}
-	
+
 	uuidB, err := metaDB.CreateLocalSession("SessionB", "default")
 	if err != nil {
 		t.Fatalf("Failed to create session B: %v", err)
@@ -56,7 +56,7 @@ func TestFederatedSearchAllSessions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to write to session B: %v", err)
 	}
-	
+
 	// Wait to ensure writes are flushed and visible
 	time.Sleep(100 * time.Millisecond)
 

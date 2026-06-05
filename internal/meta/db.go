@@ -40,8 +40,8 @@ set -g mouse on
 bind-key -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' 'copy-mode -e; send-keys -M'"
 bind-key -n WheelDownPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' ''"
 
-# Provide interactive federated search
-bind-key s command-prompt -p "ADS Search Query:" "split-window -v -l 20 '{{.AdsBinaryPath}} search \"%%\" | less -R'"
+# Provide native interactive federated search UI via floating popup
+bind-key s display-popup -E -w 90% -h 90% "{{.AdsBinaryPath}} search-interactive"
 
 # Optional: Source user's local config if it exists
 if-shell "test -f ~/.tmux.conf" "source-file ~/.tmux.conf"

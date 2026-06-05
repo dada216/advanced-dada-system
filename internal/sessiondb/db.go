@@ -26,6 +26,12 @@ CREATE TABLE IF NOT EXISTS command_history (
     end_ts DATETIME,
     exit_code INTEGER
 );
+CREATE TABLE IF NOT EXISTS metadata (
+    customer TEXT,
+    server TEXT,
+    project TEXT,
+    date DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 `
 
 type DB struct {
@@ -61,6 +67,16 @@ func Open(uuid string) (*DB, error) {
 
 func (d *DB) InsertCommand(commandText string, startTs, endTs time.Time, exitCode int) error {
 	_, err := d.db.Exec(`INSERT INTO command_history (command_text, start_ts, end_ts, exit_code) VALUES (?, ?, ?, ?)`, commandText, startTs, endTs, exitCode)
+	return err
+}
+
+func (d *DB) InjectMetadata(customer, server, project sql.NullString) error {
+	var count int
+	_ = d.db.QueryRow("SELECT COUNT(*) FROM metadata").Scan(&count)
+	if count > 0 {
+		return nil
+	}
+	_, err := d.db.Exec(`INSERT INTO metadata (customer, server, project) VALUES (?, ?, ?)`, customer, server, project)
 	return err
 }
 

@@ -41,7 +41,7 @@ bind-key -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if 
 bind-key -n WheelDownPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' ''"
 
 # Provide native interactive federated search UI via floating popup
-bind-key s display-popup -E -w 90% -h 90% "{{.AdsBinaryPath}} search-interactive"
+bind-key -n C-s display-popup -E -w 90% -h 90% "{{.AdsBinaryPath}} search-interactive"
 
 # Optional: Source user's local config if it exists
 if-shell "test -f ~/.tmux.conf" "source-file ~/.tmux.conf"

@@ -58,7 +58,7 @@ func Run(name string) error {
 	// 2. Start pipe-pane
 	// Redirect stderr to a log file so we can catch any startup/db errors.
 	logFile := filepath.Join(os.TempDir(), fmt.Sprintf("ads-recorder-%s.log", session.UUID))
-	pipeCommand := fmt.Sprintf("%s --session %s 2>> %s", recorderBin, session.UUID, logFile)
+	pipeCommand := fmt.Sprintf("'%s' --session '%s' 2>> '%s'", recorderBin, session.UUID, logFile)
 
 	// We use standard pipe-pane without '-o' which can toggle instead of forcefully open.
 	pipeCmd := exec.Command("tmux", "pipe-pane", "-t", session.UUID, pipeCommand)

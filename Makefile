@@ -3,8 +3,8 @@
 all: lint test build
 
 build:
-	go build -o bin/ads ./cmd/ads
-	go build -o bin/ads-recorder ./cmd/ads-recorder
+	go build -tags sqlite_fts5 -o bin/ads ./cmd/ads
+	go build -tags sqlite_fts5 -o bin/ads-recorder ./cmd/ads-recorder
 
 lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
@@ -13,7 +13,7 @@ test:
 	go test -v ./...
 
 test-integration:
-	@echo "Running integration tests..."
+	bash integration.sh
 
 clean:
 	rm -rf bin/

@@ -39,7 +39,7 @@ func Query(term string) ([]Result, error) {
 	var results []Result
 
 	// Use ANSI color codes for highlight markers: Red text for matches
-	query := `SELECT rowid, snippet(fts_index, 0, "` + "\033[31m" + `", "` + "\033[0m" + `", '...', 10) 
+	query := `SELECT rowid, highlight(fts_index, 0, "` + "\033[31m" + `", "` + "\033[0m" + `") 
               FROM fts_index WHERE fts_index MATCH ? ORDER BY rank LIMIT 5`
 
 	for _, s := range sessions {

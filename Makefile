@@ -5,6 +5,8 @@ all: lint test build
 build:
 	go build -mod=vendor -tags sqlite_fts5 -o bin/ads ./cmd/ads
 	go build -mod=vendor -tags sqlite_fts5 -o bin/ads-recorder ./cmd/ads-recorder
+	go build -mod=vendor -tags sqlite_fts5 -o bin/ads-plugin-search ./cmd/ads-plugin-search
+	go build -mod=vendor -tags sqlite_fts5 -o bin/ads-plugin-llm ./cmd/ads-plugin-llm
 
 lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
@@ -38,4 +40,14 @@ install: build
 		echo "WARNING: Failed to install 'ads-recorder' to /usr/bin/. It might be running or permission denied. Please run 'sudo make install'."; \
 	else \
 		echo "Successfully installed 'ads-recorder' to /usr/bin/ads-recorder"; \
+	fi
+	@if ! install -m 755 bin/ads-plugin-search /usr/bin/ads-plugin-search 2>/dev/null; then \
+		echo "WARNING: Failed to install 'ads-plugin-search'."; \
+	else \
+		echo "Successfully installed 'ads-plugin-search'"; \
+	fi
+	@if ! install -m 755 bin/ads-plugin-llm /usr/bin/ads-plugin-llm 2>/dev/null; then \
+		echo "WARNING: Failed to install 'ads-plugin-llm'."; \
+	else \
+		echo "Successfully installed 'ads-plugin-llm'"; \
 	fi

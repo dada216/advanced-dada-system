@@ -2,7 +2,7 @@
 
 ## Project Status
 
-v0.4.0 implemented! Local sessions, raw recording, FTS5 dual-write, federated search, and native bubbletea interactive TUI are functioning.
+v1.0.0 implemented! Local sessions, raw recording, FTS5 dual-write, federated search, interactive TUI, and auto-init workflows are functioning.
 
 ## Agent Instructions / Coding Policies
 

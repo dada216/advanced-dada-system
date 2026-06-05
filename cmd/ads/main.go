@@ -129,7 +129,44 @@ var runCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
-		if err := orchestrator.Run(name); err != nil {
+		err := orchestrator.Run(name)
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				fmt.Printf("Warning: Session '%s' does not exist.\n", name)
+				fmt.Printf("Would you like to automatically create a new local session named '%s'? (y/N): ", name)
+
+				reader := bufio.NewReader(os.Stdin)
+				response, _ := reader.ReadString('\n')
+				response = strings.ToLower(strings.TrimSpace(response))
+
+				if response == "y" || response == "yes" {
+					db, errDB := meta.Open()
+					if errDB != nil {
+						fmt.Fprintf(os.Stderr, "Error opening meta database: %v\n", errDB)
+						os.Exit(1)
+					}
+
+					uuid, errDB := db.CreateLocalSession(name, "default")
+					db.Close()
+
+					if errDB != nil {
+						fmt.Fprintf(os.Stderr, "Error creating session: %v\n", errDB)
+						os.Exit(1)
+					}
+
+					fmt.Printf("Created local session %s (UUID: %s)\n", name, uuid)
+
+					if errRun := orchestrator.Run(name); errRun != nil {
+						fmt.Fprintf(os.Stderr, "Error running session: %v\n", errRun)
+						os.Exit(1)
+					}
+					return
+				} else {
+					fmt.Println("Exiting gracefully. No session created.")
+					os.Exit(0)
+				}
+			}
+
 			fmt.Fprintf(os.Stderr, "Error running session: %v\n", err)
 			os.Exit(1)
 		}

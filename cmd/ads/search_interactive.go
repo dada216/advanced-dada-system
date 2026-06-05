@@ -93,7 +93,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(displayStr) > 40 {
 					displayStr = displayStr[:37] + "..."
 				}
-				msgCmd := exec.Command("tmux", "-L", "ads", "display-message", fmt.Sprintf("ADS Copied: %s", displayStr))
+				msgCmd := exec.Command("tmux", "-L", "ads", "display-message", "-d", "3000", fmt.Sprintf("ADS Copied: %s", displayStr))
 				_ = msgCmd.Run()
 			}
 			return m, tea.Quit

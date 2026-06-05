@@ -13,7 +13,7 @@ import (
 	"github.com/advanced-dada-system/ads/internal/config"
 	"github.com/advanced-dada-system/ads/internal/meta"
 	"github.com/advanced-dada-system/ads/internal/orchestrator"
-	"github.com/advanced-dada-system/ads/internal/search"
+	"github.com/advanced-dada-system/ads/internal/plugin"
 	"github.com/spf13/cobra"
 )
 
@@ -179,7 +179,7 @@ var searchCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		term := args[0]
-		results, err := search.Query(term)
+		results, err := plugin.CallSearchPlugin(term)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Search failed: %v\n", err)
 			os.Exit(1)

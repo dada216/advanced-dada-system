@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/advanced-dada-system/ads/internal/ansi"
+	"github.com/advanced-dada-system/ads/internal/plugin"
 	"github.com/advanced-dada-system/ads/internal/search"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -66,7 +67,7 @@ func doSearch(query string) tea.Cmd {
 		if query == "" {
 			return searchResultMsg(nil)
 		}
-		res, err := search.Query(query)
+		res, err := plugin.CallSearchPlugin(query)
 		if err != nil {
 			return errMsg(err)
 		}

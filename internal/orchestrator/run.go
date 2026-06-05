@@ -29,7 +29,13 @@ func Run(name string) error {
 		fmt.Printf("Session %s is already alive in tmux. Reattaching...\n", name)
 	} else {
 		// 1. Create detached tmux session
-		newCmd := exec.Command("tmux", "new-session", "-d", "-s", session.UUID, "bash")
+		// Use SSH for remote sessions, bash for local
+		shellCmd := "bash"
+		if session.Type == "remote" {
+			shellCmd = fmt.Sprintf("ssh -t -p %d %s@%s", session.RemotePort, session.RemoteUser, session.RemoteHost)
+		}
+
+		newCmd := exec.Command("tmux", "new-session", "-d", "-s", session.UUID, shellCmd)
 		if err := newCmd.Run(); err != nil {
 			return fmt.Errorf("failed to create tmux session: %w", err)
 		}

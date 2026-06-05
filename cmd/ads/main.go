@@ -1,10 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"text/tabwriter"
 
+	"github.com/advanced-dada-system/ads/internal/config"
 	"github.com/advanced-dada-system/ads/internal/meta"
 	"github.com/advanced-dada-system/ads/internal/orchestrator"
 	"github.com/advanced-dada-system/ads/internal/search"
@@ -20,6 +26,8 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var isRemote bool
+
 var newCmd = &cobra.Command{
 	Use:   "new [name]",
 	Short: "Create a new session",
@@ -33,7 +41,44 @@ var newCmd = &cobra.Command{
 		defer db.Close()
 
 		name := args[0]
-		uuid, err := db.CreateSession(name)
+		var uuid string
+
+		if isRemote {
+			reader := bufio.NewReader(os.Stdin)
+			fmt.Printf("SSH User (default: %s): ", os.Getenv("USER"))
+			user, _ := reader.ReadString('\n')
+			user = strings.TrimSpace(user)
+			if user == "" {
+				user = os.Getenv("USER")
+			}
+
+			fmt.Printf("SSH Host: ")
+			host, _ := reader.ReadString('\n')
+			host = strings.TrimSpace(host)
+			if host == "" {
+				fmt.Fprintln(os.Stderr, "SSH Host is required for remote sessions")
+				os.Exit(1)
+			}
+
+			fmt.Printf("SSH Port (default: 22): ")
+			portStr, _ := reader.ReadString('\n')
+			portStr = strings.TrimSpace(portStr)
+			port := 22
+			if portStr != "" {
+				p, err := strconv.Atoi(portStr)
+				if err == nil && p > 0 {
+					port = p
+				} else {
+					fmt.Fprintln(os.Stderr, "Invalid port number")
+					os.Exit(1)
+				}
+			}
+
+			uuid, err = db.CreateRemoteSession(name, user, host, port)
+		} else {
+			uuid, err = db.CreateLocalSession(name)
+		}
+
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating session: %v\n", err)
 			os.Exit(1)
@@ -113,11 +158,100 @@ var searchCmd = &cobra.Command{
 	},
 }
 
+var deleteCmd = &cobra.Command{
+	Use:   "delete [name]",
+	Short: "Delete a session",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		name := args[0]
+		db, err := meta.Open()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening meta database: %v\n", err)
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		session, err := db.GetSessionByName(name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting session: %v\n", err)
+			os.Exit(1)
+		}
+
+		appDir, _ := config.InitAppDataDir()
+		dbPath := filepath.Join(appDir, "sessions", session.UUID+".db")
+		_ = os.Remove(dbPath)
+
+		if err := db.DeleteSession(session.UUID); err != nil {
+			fmt.Fprintf(os.Stderr, "Error deleting session from meta db: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Session '%s' deleted successfully.\n", name)
+	},
+}
+
+var authCmd = &cobra.Command{
+	Use:   "auth",
+	Short: "Authentication testing utilities",
+}
+
+var authTestCmd = &cobra.Command{
+	Use:   "test [name]",
+	Short: "Test SSH connection for a remote session",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		name := args[0]
+		db, err := meta.Open()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening meta database: %v\n", err)
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		session, err := db.GetSessionByName(name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting session: %v\n", err)
+			os.Exit(1)
+		}
+
+		if session.Type != "remote" {
+			fmt.Fprintf(os.Stderr, "Session '%s' is not a remote session\n", name)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Testing SSH connection to %s@%s:%d...\n", session.RemoteUser, session.RemoteHost, session.RemotePort)
+
+		sshArgs := []string{
+			"-p", strconv.Itoa(session.RemotePort),
+			"-o", "BatchMode=yes",
+			"-o", "ConnectTimeout=5",
+			fmt.Sprintf("%s@%s", session.RemoteUser, session.RemoteHost),
+			"echo 'SSH authentication successful'",
+		}
+
+		testCmd := exec.Command("ssh", sshArgs...)
+		testCmd.Stdout = os.Stdout
+		testCmd.Stderr = os.Stderr
+
+		if err := testCmd.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "\nSSH authentication failed!\n")
+			fmt.Fprintf(os.Stderr, "Please ensure your ssh-agent is running and you have added the correct key.\n")
+			os.Exit(1)
+		}
+	},
+}
+
 func init() {
+	newCmd.Flags().BoolVarP(&isRemote, "remote", "r", false, "Create a remote SSH session")
+
+	authCmd.AddCommand(authTestCmd)
+
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(searchCmd)
+	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(authCmd)
 }
 
 func main() {

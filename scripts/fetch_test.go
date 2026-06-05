@@ -21,15 +21,15 @@ func TestHtmlToMd(t *testing.T) {
 		"[link](https://go.dev)",
 		"```go\n`fmt.Println(\"hello\")`\n```",
 	}
-	
+
 	result := HtmlToMd(input)
-	
+
 	for _, exp := range expected {
 		if !strings.Contains(result, exp) {
 			t.Errorf("Expected result to contain '%s', but got: \n%s", exp, result)
 		}
 	}
-	
+
 	if strings.Contains(result, "alert") {
 		t.Errorf("Expected script tags to be stripped out")
 	}

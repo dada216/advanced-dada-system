@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/advanced-dada-system/ads/internal/ansi"
 	"github.com/advanced-dada-system/ads/internal/sessiondb"
 	"github.com/spf13/cobra"
 )
@@ -32,13 +33,17 @@ var rootCmd = &cobra.Command{
 		defer db.Close()
 
 		buf := make([]byte, 4096)
+		scanner := ansi.NewOSCScanner(db)
+
 		for {
 			n, err := os.Stdin.Read(buf)
 			if n > 0 {
-				if wErr := db.WriteChunk(buf[:n]); wErr != nil {
+				chunk := buf[:n]
+				if wErr := db.WriteChunk(chunk); wErr != nil {
 					fmt.Fprintf(os.Stderr, "Error writing chunk to db: %v\n", wErr)
 					os.Exit(1)
 				}
+				_, _ = scanner.Write(chunk)
 			}
 			if err == io.EOF {
 				break

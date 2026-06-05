@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/advanced-dada-system/ads/internal/ansi"
 	"github.com/advanced-dada-system/ads/internal/config"
@@ -18,6 +19,13 @@ CREATE TABLE IF NOT EXISTS io_stream (
 	data BLOB NOT NULL
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS fts_index USING fts5(text);
+CREATE TABLE IF NOT EXISTS command_history (
+    id INTEGER PRIMARY KEY,
+    command_text TEXT,
+    start_ts DATETIME,
+    end_ts DATETIME,
+    exit_code INTEGER
+);
 `
 
 type DB struct {
@@ -49,6 +57,11 @@ func Open(uuid string) (*DB, error) {
 	}
 
 	return &DB{db: db}, nil
+}
+
+func (d *DB) InsertCommand(commandText string, startTs, endTs time.Time, exitCode int) error {
+	_, err := d.db.Exec(`INSERT INTO command_history (command_text, start_ts, end_ts, exit_code) VALUES (?, ?, ?, ?)`, commandText, startTs, endTs, exitCode)
+	return err
 }
 
 func (d *DB) Close() error {

@@ -23,13 +23,13 @@ tidy:
 
 install: build
 	@echo "Installing binaries to /usr/bin/..."
-	@if ! cp bin/ads /usr/bin/ads 2>/dev/null; then \
-		echo "WARNING: Failed to copy 'ads' to /usr/bin/. Permission denied. Please run 'sudo make install'."; \
+	@if ! install -m 755 bin/ads /usr/bin/ads 2>/dev/null; then \
+		echo "WARNING: Failed to install 'ads' to /usr/bin/. Permission denied. Please run 'sudo make install'."; \
 	else \
 		echo "Successfully installed 'ads' to /usr/bin/ads"; \
 	fi
-	@if ! cp bin/ads-recorder /usr/bin/ads-recorder 2>/dev/null; then \
-		echo "WARNING: Failed to copy 'ads-recorder' to /usr/bin/. Permission denied. Please run 'sudo make install'."; \
+	@if ! install -m 755 bin/ads-recorder /usr/bin/ads-recorder 2>/dev/null; then \
+		echo "WARNING: Failed to install 'ads-recorder' to /usr/bin/. It might be running or permission denied. Please run 'sudo make install'."; \
 	else \
 		echo "Successfully installed 'ads-recorder' to /usr/bin/ads-recorder"; \
 	fi

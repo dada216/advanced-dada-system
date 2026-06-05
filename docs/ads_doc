@@ -1,0 +1,92 @@
+ADS(1)                           User Commands                          ADS(1)
+
+NAME
+       ads - Advanced Dada System (Terminal Analytics Platform)
+
+SYNOPSIS
+       ads <command> [arguments] [flags]
+
+DESCRIPTION
+       ads is a decentralized, CLI-first terminal session management and 
+       analytics platform. It eschews traditional background daemons and 
+       custom PTY emulators in favor of utilizing the native tmux and ssh 
+       binaries. All terminal output is captured, stripped of ANSI control 
+       sequences, and dual-written to SQLite databases for high-performance 
+       Full-Text Search (FTS) and semantic command analysis.
+
+COMMANDS
+       new [name]
+           Provisions a new tracking database for a session.
+           Flags:
+             -r, --remote    Create a remote session. Prompts the user 
+                             interactively for SSH User, Host, and Port.
+
+       run [name]
+           Executes and attaches to the specified session.
+           If the session is local, spawns a bash shell. If remote, securely 
+           initiates an ssh connection. Terminal output is piped natively to 
+           the ads-recorder background binary. If the session is already 
+           running in the background (detached), this command will 
+           seamlessly reattach to it.
+
+       list
+           Displays a tabulated index of all known sessions, showing their 
+           Name, UUID, Type (local/remote), Status, and Creation Date.
+
+       search [query]
+           Executes a federated FTS5 search across all recorded session 
+           databases. Returns highlighted snippets of terminal output 
+           matching the query, annotated with the origin session name.
+
+       auth test [name]
+           Headless utility to verify SSH connectivity for a remote session 
+           prior to execution. Utilizes BatchMode to strictly test the 
+           native ssh-agent credentials without prompting for passwords.
+
+       delete [name]
+           Permanently unlinks the session's SQLite .db file from the local 
+           filesystem and drops the session record from the Meta-Database.
+
+       hook [shell]
+           Generates shell integration scripts to enable semantic chunking.
+           Currently supports: bash
+           Example usage: eval "$(ads hook bash)"
+           Injects invisible OSC 133 sequences into the terminal to boundary-
+           mark prompts, user input, and command executions for the database.
+
+ENVIRONMENT VARIABLES
+       USER
+           Used as the default SSH username when provisioning a remote session 
+           via 'ads new --remote'.
+
+FILES
+       ~/.local/share/ads/meta.db
+           The central orchestrator database storing session metadata, 
+           remote configurations, and statuses.
+
+       ~/.local/share/ads/sessions/<uuid>.db
+           The isolated, per-session Write-Ahead Log (WAL) SQLite databases 
+           storing the raw io_stream, the sanitized fts_index, and the 
+           semantic command_history.
+
+EXAMPLES
+       Create and run a local session:
+           $ ads new my-local-task
+           $ ads run my-local-task
+
+       Create, test, and run a remote SSH session:
+           $ ads new my-server --remote
+           # (Prompts for User, Host, Port)
+           $ ads auth test my-server
+           $ ads run my-server
+
+       Search for an error across all past sessions:
+           $ ads search "Out of memory"
+
+       Enable semantic tracking in your current shell:
+           $ eval "$(ads hook bash)"
+
+SEE ALSO
+       tmux(1), ssh(1), bash(1)
+
+ADS 0.3                          June 2026                              ADS(1)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/advanced-dada-system/ads/internal/config"
 	"github.com/advanced-dada-system/ads/internal/meta"
@@ -51,7 +52,10 @@ func Query(term string) ([]Result, error) {
 			continue
 		}
 
-		rows, err := db.Query(query, term)
+		cleanTerm := strings.ReplaceAll(term, "\"", "")
+		ftsTerm := "\"" + cleanTerm + "\"*"
+
+		rows, err := db.Query(query, ftsTerm)
 		if err != nil {
 			// Don't warn if the table just doesn't exist yet, but warn for other errors (like locks)
 			if err.Error() != "no such table: fts_index" {

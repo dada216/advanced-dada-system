@@ -105,6 +105,14 @@ func (d *DB) UpdateSessionStatus(uuid, status string) error {
 	return nil
 }
 
+func (d *DB) UpdateSessionProfile(uuid, profileName string) error {
+	_, err := d.db.Exec(`UPDATE sessions SET profile_name = ? WHERE uuid = ?`, profileName, uuid)
+	if err != nil {
+		return fmt.Errorf("failed to update session profile: %w", err)
+	}
+	return nil
+}
+
 func (d *DB) DeleteSession(uuid string) error {
 	_, err := d.db.Exec(`DELETE FROM sessions WHERE uuid = ?`, uuid)
 	if err != nil {

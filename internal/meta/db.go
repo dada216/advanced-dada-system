@@ -35,12 +35,6 @@ const defaultProfile = `
 set-option -g history-limit 999999999
 set -g mouse on
 
-# Reverse mouse scrolling (scroll backwards naturally)
-bind-key -T copy-mode-vi WheelUpPane send-keys -X scroll-down
-bind-key -T copy-mode-vi WheelDownPane send-keys -X scroll-up
-bind-key -T copy-mode WheelUpPane send-keys -X scroll-down
-bind-key -T copy-mode WheelDownPane send-keys -X scroll-up
-
 # Provide native interactive federated search UI via floating popup
 bind-key -n C-s display-popup -E -w 90% -h 90% "{{.AdsBinaryPath}} search-interactive"
 
@@ -83,9 +77,9 @@ func Open() (*DB, error) {
 	// Seed default profile
 	_, _ = db.Exec(`INSERT OR IGNORE INTO tmux_profiles (name, config_text) VALUES ('default', ?)`, defaultProfile)
 
-	// Update the default profile to the new version ONLY if it still contains the old history limit
-	// This prevents wiping out user customizations.
-	_, _ = db.Exec(`UPDATE tmux_profiles SET config_text = ? WHERE name = 'default' AND config_text LIKE '%history-limit 100000%'`, defaultProfile)
+	// Force update the default profile to remove the reverse scrolling bindings
+	// We only do this if it contains our previous buggy reverse scroll bindings
+	_, _ = db.Exec(`UPDATE tmux_profiles SET config_text = ? WHERE name = 'default' AND config_text LIKE '%Reverse mouse scrolling%'`, defaultProfile)
 
 	// v2.0 Migrations
 	// Ignore errors if columns already exist

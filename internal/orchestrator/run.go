@@ -26,51 +26,54 @@ func Run(name string) error {
 	hasSessionCmd := exec.Command("tmux", "-L", "ads", "has-session", "-t", session.UUID)
 	sessionExists := hasSessionCmd.Run() == nil
 
+	// Get absolute path of current executable to find ads-recorder and set AdsBinaryPath
+	execPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+	binDir := filepath.Dir(execPath)
+	recorderBin := filepath.Join(binDir, "ads-recorder")
+
+	// Render tmux profile ALWAYS
+	configTpl, err := db.GetTmuxProfile(session.Profile)
+	if err != nil {
+		return fmt.Errorf("failed to get tmux profile '%s': %w", session.Profile, err)
+	}
+
+	tpl, err := template.New("tmux").Parse(configTpl)
+	if err != nil {
+		return fmt.Errorf("failed to parse tmux profile template: %w", err)
+	}
+
+	confPath := filepath.Join(os.TempDir(), fmt.Sprintf("ads-tmux-%s.conf", session.UUID))
+	f, err := os.Create(confPath)
+	if err != nil {
+		return fmt.Errorf("failed to create tmux config file: %w", err)
+	}
+
+	err = tpl.Execute(f, struct {
+		AdsBinaryPath string
+		SessionUUID   string
+	}{
+		AdsBinaryPath: execPath,
+		SessionUUID:   session.UUID,
+	})
+	f.Close()
+	if err != nil {
+		return fmt.Errorf("failed to render tmux profile: %w", err)
+	}
+
 	if sessionExists {
 		fmt.Printf("Session %s is already alive in tmux. Reattaching...\n", name)
+
+		// Force apply the configuration to the server in case it was updated
+		sourceCmd := exec.Command("tmux", "-L", "ads", "source-file", confPath)
+		_ = sourceCmd.Run()
 	} else {
-		// 1. Create detached tmux session
 		// Use SSH for remote sessions, bash for local
 		shellCmd := "bash"
 		if session.Type == "remote" {
 			shellCmd = fmt.Sprintf("ssh -t -p %d %s@%s", session.RemotePort, session.RemoteUser, session.RemoteHost)
-		}
-
-		// Get absolute path of current executable to find ads-recorder and set AdsBinaryPath
-		execPath, err := os.Executable()
-		if err != nil {
-			return fmt.Errorf("failed to get executable path: %w", err)
-		}
-		binDir := filepath.Dir(execPath)
-		recorderBin := filepath.Join(binDir, "ads-recorder")
-
-		// Render tmux profile
-		configTpl, err := db.GetTmuxProfile(session.Profile)
-		if err != nil {
-			return fmt.Errorf("failed to get tmux profile '%s': %w", session.Profile, err)
-		}
-
-		tpl, err := template.New("tmux").Parse(configTpl)
-		if err != nil {
-			return fmt.Errorf("failed to parse tmux profile template: %w", err)
-		}
-
-		confPath := filepath.Join(os.TempDir(), fmt.Sprintf("ads-tmux-%s.conf", session.UUID))
-		f, err := os.Create(confPath)
-		if err != nil {
-			return fmt.Errorf("failed to create tmux config file: %w", err)
-		}
-
-		err = tpl.Execute(f, struct {
-			AdsBinaryPath string
-			SessionUUID   string
-		}{
-			AdsBinaryPath: execPath,
-			SessionUUID:   session.UUID,
-		})
-		f.Close()
-		if err != nil {
-			return fmt.Errorf("failed to render tmux profile: %w", err)
 		}
 
 		newCmd := exec.Command("tmux", "-L", "ads", "-f", confPath, "new-session", "-d", "-s", session.UUID, shellCmd)

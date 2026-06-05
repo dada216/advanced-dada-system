@@ -6,6 +6,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/advanced-dada-system/ads/internal/meta"
+	"github.com/advanced-dada-system/ads/internal/orchestrator"
 	"github.com/spf13/cobra"
 )
 
@@ -75,9 +76,23 @@ var listCmd = &cobra.Command{
 	},
 }
 
+var runCmd = &cobra.Command{
+	Use:   "run [name]",
+	Short: "Run a terminal session",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		name := args[0]
+		if err := orchestrator.Run(name); err != nil {
+			fmt.Fprintf(os.Stderr, "Error running session: %v\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(runCmd)
 }
 
 func main() {

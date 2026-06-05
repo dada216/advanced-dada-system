@@ -74,3 +74,24 @@ func (d *DB) ListSessions() ([]Session, error) {
 	}
 	return sessions, rows.Err()
 }
+
+func (d *DB) GetSessionByName(name string) (*Session, error) {
+	var s Session
+	err := d.db.QueryRow(`SELECT uuid, name, type, status, created_at FROM sessions WHERE name = ?`, name).
+		Scan(&s.UUID, &s.Name, &s.Type, &s.Status, &s.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("session '%s' not found", name)
+		}
+		return nil, fmt.Errorf("failed to query session: %w", err)
+	}
+	return &s, nil
+}
+
+func (d *DB) UpdateSessionStatus(uuid, status string) error {
+	_, err := d.db.Exec(`UPDATE sessions SET status = ? WHERE uuid = ?`, status, uuid)
+	if err != nil {
+		return fmt.Errorf("failed to update status: %w", err)
+	}
+	return nil
+}

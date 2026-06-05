@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS io_stream (
 	ts   DATETIME DEFAULT CURRENT_TIMESTAMP,
 	data BLOB NOT NULL
 );
-CREATE VIRTUAL TABLE IF NOT EXISTS fts_index USING fts5(text, content=io_stream, content_rowid=id);
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_index USING fts5(text);
 `
 
 type DB struct {

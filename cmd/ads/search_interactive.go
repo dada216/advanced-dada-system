@@ -134,11 +134,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 var (
-	titleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
-	sessionStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true)
-	rowStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	cursorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true)
-	selectedStyle = lipgloss.NewStyle().Background(lipgloss.Color("236"))
+	titleStyle    = lipgloss.NewStyle().Background(lipgloss.Color("2")).Foreground(lipgloss.Color("0")).Bold(true)
+	sessionStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true)
+	rowStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	cursorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Bold(true)
+	selectedStyle = lipgloss.NewStyle().Background(lipgloss.Color("238"))
 )
 
 func cleanSnippet(s string) string {

@@ -34,6 +34,7 @@ type model struct {
 	err       error
 	width     int
 	height    int
+	cursor    int
 }
 
 type searchResultMsg []search.Result
@@ -50,6 +51,7 @@ func initialModel() model {
 		textInput: ti,
 		results:   nil,
 		err:       nil,
+		cursor:    0,
 	}
 }
 
@@ -78,6 +80,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc, tea.KeyEnter:
 			return m, tea.Quit
+		case tea.KeyUp:
+			if m.cursor > 0 {
+				m.cursor--
+			}
+			return m, nil
+		case tea.KeyDown:
+			if m.cursor < len(m.results)-1 {
+				m.cursor++
+			}
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
@@ -86,6 +98,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case searchResultMsg:
 		m.results = msg
+		m.cursor = 0 // Reset cursor on new search
 		return m, nil
 
 	case errMsg:
@@ -104,10 +117,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 var (
-	titleStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
-	sessionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true)
-	rowStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	titleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
+	sessionStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true)
+	rowStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	cursorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("212")).Bold(true)
+	selectedStyle = lipgloss.NewStyle().Background(lipgloss.Color("236"))
 )
+
+func cleanSnippet(s string) string {
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", "")
+	return s
+}
 
 func (m model) View() string {
 	var b strings.Builder
@@ -128,13 +149,25 @@ func (m model) View() string {
 		}
 		for i, r := range m.results {
 			if i >= maxDisplay {
-				b.WriteString(fmt.Sprintf("\n...and %d more hidden due to terminal height\n", len(m.results)-maxDisplay))
+				b.WriteString(fmt.Sprintf("\n...and %d more hidden\n", len(m.results)-maxDisplay))
 				break
 			}
-			b.WriteString(fmt.Sprintf("%s %s %s\n",
+
+			cursor := "  "
+			lineStyle := lipgloss.NewStyle()
+			if m.cursor == i {
+				cursor = cursorStyle.Render("> ")
+				lineStyle = selectedStyle
+			}
+
+			cleanedSnippet := cleanSnippet(r.Snippet)
+			line := fmt.Sprintf("%s%s %s %s",
+				cursor,
 				sessionStyle.Render(fmt.Sprintf("[%s]", r.SessionName)),
 				rowStyle.Render(fmt.Sprintf("(row %d):", r.RowID)),
-				r.Snippet))
+				cleanedSnippet)
+
+			b.WriteString(lineStyle.Render(line) + "\n")
 		}
 	}
 

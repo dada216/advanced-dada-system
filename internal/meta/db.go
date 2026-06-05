@@ -36,6 +36,15 @@ const defaultProfile = `
 set-option -g history-limit 100000
 set -g mouse on
 
+# Make mouse wheel scroll the pane lines instead of shell command history
+bind -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' 'copy-mode -e; send-keys -M'"
+bind -n WheelDownPane select-pane -t= \; send-keys -M
+
+# Prevent tmux from capturing the native terminal scrollback buffer (Alternate Screen)
+# This forces tmux to behave exactly like a native shell window.
+# Note: Scrolling the native window during a split-pane will scroll the entire screen.
+set -ga terminal-overrides ',*256color*:smcup@:rmcup@,*xterm*:smcup@:rmcup@'
+
 # Provide interactive federated search
 bind-key s command-prompt -p "ADS Search Query:" "split-window -v -l 20 '{{.AdsBinaryPath}} search \"%%\" | less -R'"
 
@@ -74,6 +83,9 @@ func Open() (*DB, error) {
 
 	// Seed default profile
 	_, _ = db.Exec(`INSERT OR IGNORE INTO tmux_profiles (name, config_text) VALUES ('default', ?)`, defaultProfile)
+
+	// Force update the default profile to ensure existing users get the new scrollback bindings
+	_, _ = db.Exec(`UPDATE tmux_profiles SET config_text = ? WHERE name = 'default'`, defaultProfile)
 
 	return &DB{db: db}, nil
 }

@@ -20,14 +20,20 @@ COMMANDS
            Flags:
              -r, --remote    Create a remote session. Prompts the user 
                              interactively for SSH User, Host, and Port.
+             -p, --profile   Specifies the Tmux Profile to utilize 
+                             (defaults to 'default'). Profiles are stored 
+                             as renderable templates within the Meta-Database.
 
        run [name]
            Executes and attaches to the specified session.
-           If the session is local, spawns a bash shell. If remote, securely 
-           initiates an ssh connection. Terminal output is piped natively to 
-           the ads-recorder background binary. If the session is already 
-           running in the background (detached), this command will 
-           seamlessly reattach to it.
+           The orchestrator dynamically fetches the assigned Tmux Profile 
+           from the Meta-Database, renders it to an ephemeral config file 
+           in /tmp, and spawns the local multiplexer.
+           
+           If the session is local, it spawns a bash shell. If remote, it 
+           securely initiates an ssh connection inside the tmux pane. 
+           Terminal output is piped natively to the ads-recorder background 
+           binary. Re-running on a detached session will reattach instantly.
 
        list
            Displays a tabulated index of all known sessions, showing their 
@@ -59,6 +65,15 @@ ENVIRONMENT VARIABLES
            Used as the default SSH username when provisioning a remote session 
            via 'ads new --remote'.
 
+DEFAULT TMUX INTEGRATIONS
+       By default, the 'default' tmux profile automatically injects key 
+       workflow optimizations:
+           * Scrollback history is increased to 100,000 lines.
+           * Mouse support is globally enabled.
+           * Prefix + s opens an interactive command prompt that natively 
+             executes an 'ads search' query across all session databases, 
+             displaying the results in a split pane via 'less'.
+
 FILES
        ~/.local/share/ads/meta.db
            The central orchestrator database storing session metadata, 
@@ -89,4 +104,4 @@ EXAMPLES
 SEE ALSO
        tmux(1), ssh(1), bash(1)
 
-ADS 0.3                          June 2026                              ADS(1)
+ADS 0.4                          June 2026                              ADS(1)

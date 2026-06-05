@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/advanced-dada-system/ads/internal/search"
@@ -78,7 +79,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc, tea.KeyEnter:
+		case tea.KeyCtrlC, tea.KeyEsc:
+			return m, tea.Quit
+		case tea.KeyEnter:
+			if len(m.results) > 0 && m.cursor < len(m.results) {
+				selected := cleanSnippet(m.results[m.cursor].Snippet)
+				selected = strings.ReplaceAll(selected, "\033[31m", "")
+				selected = strings.ReplaceAll(selected, "\033[0m", "")
+				cmd := exec.Command("tmux", "-L", "ads", "set-buffer", selected)
+				_ = cmd.Run()
+			}
 			return m, tea.Quit
 		case tea.KeyUp:
 			if m.cursor > 0 {

@@ -6,6 +6,7 @@ v0.1 implemented! Local sessions, raw recording, FTS5 dual-write, and federated 
 
 ## Agent Instructions / Coding Policies
 
+- **CODING STYLE**: You must strictly adhere to the guidelines codified in `llm/design/coding_style.md` (derived from Effective Go).
 - **MANDATORY**: ALWAYS run the `Makefile` verification pipeline (`make tidy`, `make lint`, `make build`, and `make test`/`make test-integration`) before committing code or declaring a milestone complete.
 - Do not bypass `golangci-lint` errors. If formatting (`gofmt`) or code logic fails, correct it proactively.
 - All code commits must be atomic and strictly adhere to the architecture laid out in `llm/design/architecture.md`.

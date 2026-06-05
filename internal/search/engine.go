@@ -3,6 +3,7 @@ package search
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/advanced-dada-system/ads/internal/config"
@@ -41,17 +42,23 @@ func Query(term string) ([]Result, error) {
               FROM fts_index WHERE fts_index MATCH ? ORDER BY rank LIMIT 5`
 
 	for _, s := range sessions {
-		dbPath := filepath.Join(appDir, "sessions", fmt.Sprintf("%s.db", s.UUID))
+		// Use _busy_timeout to prevent SQLITE_BUSY silent skips when ads-recorder is actively writing
+		dbPath := filepath.Join(appDir, "sessions", fmt.Sprintf("%s.db", s.UUID)) + "?_busy_timeout=5000&_journal_mode=WAL"
 
 		db, err := sql.Open("sqlite3", dbPath)
 		if err != nil {
-			continue // Skip errors for individual DBs to allow partial federated search
+			fmt.Fprintf(os.Stderr, "Warning: failed to open db for session %s: %v\n", s.Name, err)
+			continue
 		}
 
 		rows, err := db.Query(query, term)
 		if err != nil {
+			// Don't warn if the table just doesn't exist yet, but warn for other errors (like locks)
+			if err.Error() != "no such table: fts_index" {
+				fmt.Fprintf(os.Stderr, "Warning: query failed for session %s: %v\n", s.Name, err)
+			}
 			db.Close()
-			continue // Skip if fts_index table doesn't exist or query fails
+			continue
 		}
 
 		for rows.Next() {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"github.com/advanced-dada-system/ads/internal/config"
 	"github.com/advanced-dada-system/ads/internal/plugin"
 	hashicorpplugin "github.com/hashicorp/go-plugin"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type LLMPlugin struct{}
@@ -33,7 +35,29 @@ func (s *LLMPlugin) RunTask(args map[string]string) (string, error) {
 	}
 
 	apiKey := os.Getenv("ADS_OPENROUTER_KEY")
+	model := "openai/gpt-3.5-turbo"
+
+	// Fetch from sqlite meta.db if available
+	appDir, err := config.InitAppDataDir()
+	if err == nil {
+		dbPath := filepath.Join(appDir, "meta.db")
+		if db, err := sql.Open("sqlite3", dbPath); err == nil {
+			var dbKey string
+			if err := db.QueryRow(`SELECT value FROM plugin_configs WHERE plugin_name = 'llm' AND key = 'api_key'`).Scan(&dbKey); err == nil && dbKey != "" {
+				if apiKey == "" {
+					apiKey = dbKey
+				}
+			}
+			var dbModel string
+			if err := db.QueryRow(`SELECT value FROM plugin_configs WHERE plugin_name = 'llm' AND key = 'model'`).Scan(&dbModel); err == nil && dbModel != "" {
+				model = dbModel
+			}
+			db.Close()
+		}
+	}
+
 	if apiKey == "" {
+		// Fallback to legacy file
 		appDir, err := config.InitAppDataDir()
 		if err == nil {
 			keyPath := filepath.Join(appDir, "secrets", "openrouter.key")
@@ -44,11 +68,11 @@ func (s *LLMPlugin) RunTask(args map[string]string) (string, error) {
 	}
 
 	if apiKey == "" {
-		return "", fmt.Errorf("missing OpenRouter API key. Set ADS_OPENROUTER_KEY env var or save it in ~/.local/share/ads/secrets/openrouter.key")
+		return "", fmt.Errorf("missing OpenRouter API key. Please run 'ads plugin edit llm' to configure it.")
 	}
 
 	reqBody := openRouterReq{
-		Model: "openai/gpt-3.5-turbo",
+		Model: model,
 		Messages: []msg{
 			{Role: "system", Content: "You are an expert Linux system administrator analyzing terminal session output."},
 			{Role: "user", Content: prompt},

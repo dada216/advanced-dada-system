@@ -27,6 +27,13 @@ CREATE TABLE IF NOT EXISTS tmux_profiles (
 	name TEXT UNIQUE NOT NULL,
 	config_text TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS plugin_configs (
+	plugin_name TEXT,
+	key TEXT,
+	value TEXT,
+	PRIMARY KEY(plugin_name, key)
+);
 `
 
 const defaultProfile = `

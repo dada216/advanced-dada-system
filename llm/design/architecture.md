@@ -130,7 +130,25 @@ For automated configuration management, the platform delegates entirely to the A
 
 ---
 
-## 10. Conclusion
+## 10. Coding Agent Policies & Development Standards
+
+To ensure code quality, maintainability, and seamless collaboration with AI coding assistants, the project strictly adheres to the following development policies:
+
+### Makefile-Driven Workflows
+All build, test, and linting operations must be encapsulated within a `Makefile`. This provides a unified interface for both human developers and autonomous agents. Agents should rely on executing `make` targets (e.g., `make build`, `make lint`, `make test`) rather than constructing complex shell commands manually.
+
+### Golangci-lint v2 Enforcement
+Code quality is enforced using `golangci-lint` (v2). 
+- The `Makefile` must include a `lint` target that executes `golangci-lint run`.
+- Agents must run the `lint` target and resolve all reported issues before concluding a task or committing code.
+- The configuration for `golangci-lint` should be explicitly defined in a `.golangci.yml` file to enforce consistent rules across all environments.
+
+### Gitflow and Commits
+Agents must follow standard gitflow practices for branching and committing. Commits should be atomic, well-documented, and created using predefined project conventions. Agents should utilize internal skills (like `mastering-git-cli`) to handle VCS operations correctly.
+
+---
+
+## 11. Conclusion
 
 By abandoning the monolithic daemon model and discarding custom terminal emulation in favor of `tmux pipe-pane` and native `ssh`, this architecture achieves absolute stability, zero-emulation-bug rendering, and free session persistence. 
 

@@ -22,8 +22,8 @@ func Run(name string) error {
 		return err
 	}
 
-	// Check if tmux session already exists natively
-	hasSessionCmd := exec.Command("tmux", "has-session", "-t", session.UUID)
+	// Check if tmux session already exists natively in our isolated 'ads' server
+	hasSessionCmd := exec.Command("tmux", "-L", "ads", "has-session", "-t", session.UUID)
 	sessionExists := hasSessionCmd.Run() == nil
 
 	if sessionExists {
@@ -73,10 +73,14 @@ func Run(name string) error {
 			return fmt.Errorf("failed to render tmux profile: %w", err)
 		}
 
-		newCmd := exec.Command("tmux", "-f", confPath, "new-session", "-d", "-s", session.UUID, shellCmd)
+		newCmd := exec.Command("tmux", "-L", "ads", "-f", confPath, "new-session", "-d", "-s", session.UUID, shellCmd)
 		if err := newCmd.Run(); err != nil {
 			return fmt.Errorf("failed to create tmux session: %w", err)
 		}
+
+		// Force apply the configuration to the server in case it was already running and ignored the -f flag
+		sourceCmd := exec.Command("tmux", "-L", "ads", "source-file", confPath)
+		_ = sourceCmd.Run()
 
 		// 2. Start pipe-pane
 		// Redirect stderr to a log file so we can catch any startup/db errors.
@@ -84,7 +88,7 @@ func Run(name string) error {
 		pipeCommand := fmt.Sprintf("'%s' --session '%s' 2>> '%s'", recorderBin, session.UUID, logFile)
 
 		// We use standard pipe-pane without '-o' which can toggle instead of forcefully open.
-		pipeCmd := exec.Command("tmux", "pipe-pane", "-t", session.UUID, pipeCommand)
+		pipeCmd := exec.Command("tmux", "-L", "ads", "pipe-pane", "-t", session.UUID, pipeCommand)
 		if err := pipeCmd.Run(); err != nil {
 			return fmt.Errorf("failed to start pipe-pane: %w", err)
 		}
@@ -101,7 +105,7 @@ func Run(name string) error {
 	}()
 
 	// 3. Attach
-	attachCmd := exec.Command("tmux", "attach", "-t", session.UUID)
+	attachCmd := exec.Command("tmux", "-L", "ads", "attach", "-t", session.UUID)
 	attachCmd.Stdin = os.Stdin
 	attachCmd.Stdout = os.Stdout
 	attachCmd.Stderr = os.Stderr

@@ -27,6 +27,16 @@ var editCmd = &cobra.Command{
 
 		p, err := db.GetProfileMetadata(profileName)
 		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				// Check if they accidentally passed a session name
+				session, sErr := db.GetSessionByName(profileName)
+				if sErr == nil {
+					fmt.Fprintf(os.Stderr, "Error: '%s' is a Session, not a Profile.\n", profileName)
+					fmt.Fprintf(os.Stderr, "This session uses the '%s' profile.\n", session.Profile)
+					fmt.Fprintf(os.Stderr, "To edit its metadata, run: ads edit %s\n", session.Profile)
+					os.Exit(1)
+				}
+			}
 			fmt.Fprintf(os.Stderr, "Error fetching profile: %v\n", err)
 			os.Exit(1)
 		}

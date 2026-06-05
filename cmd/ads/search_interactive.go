@@ -88,6 +88,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				selected = strings.ReplaceAll(selected, "\033[0m", "")
 				cmd := exec.Command("tmux", "-L", "ads", "set-buffer", selected)
 				_ = cmd.Run()
+
+				displayStr := selected
+				if len(displayStr) > 40 {
+					displayStr = displayStr[:37] + "..."
+				}
+				msgCmd := exec.Command("tmux", "-L", "ads", "display-message", fmt.Sprintf("ADS Copied: %s", displayStr))
+				_ = msgCmd.Run()
 			}
 			return m, tea.Quit
 		case "up", "ctrl+p", "ctrl+k":
@@ -167,7 +174,7 @@ func (m model) View() string {
 			lineStyle := lipgloss.NewStyle()
 			if m.cursor == i {
 				cursor = cursorStyle.Render("> ")
-				lineStyle = selectedStyle
+				lineStyle = selectedStyle.Width(m.width)
 			}
 
 			cleanedSnippet := cleanSnippet(r.Snippet)

@@ -138,12 +138,14 @@ var (
 	sessionStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Bold(true)
 	rowStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	cursorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Bold(true)
-	selectedStyle = lipgloss.NewStyle().Background(lipgloss.Color("238"))
+	selectedStyle = lipgloss.NewStyle().Background(lipgloss.Color("119")).Foreground(lipgloss.Color("232"))
 )
 
 func cleanSnippet(s string) string {
 	s = strings.ReplaceAll(s, "\n", " ")
 	s = strings.ReplaceAll(s, "\r", "")
+	s = strings.ReplaceAll(s, "\t", "    ")
+	s = strings.ReplaceAll(s, "\b", "")
 	return s
 }
 

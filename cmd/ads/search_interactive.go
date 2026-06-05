@@ -141,11 +141,23 @@ var (
 )
 
 func cleanSnippet(s string) string {
-	s = strings.ReplaceAll(s, "\n", " ")
+	lines := strings.Split(s, "\n")
+	var matchLine string
+	for _, line := range lines {
+		if strings.Contains(line, "\033[31m") {
+			matchLine = line
+			break
+		}
+	}
+	if matchLine == "" {
+		matchLine = s
+	}
+
+	s = matchLine
 	s = strings.ReplaceAll(s, "\r", "")
 	s = strings.ReplaceAll(s, "\t", "    ")
 	s = strings.ReplaceAll(s, "\b", "")
-	return s
+	return strings.TrimSpace(s)
 }
 
 func (m model) View() string {

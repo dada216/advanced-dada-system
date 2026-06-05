@@ -3,7 +3,8 @@
 echo "Building binaries..."
 make build
 
-UUID=$(./bin/ads new test-script | grep UUID | awk '{print $2}')
+SESSION_NAME="test-session-$RANDOM-$RANDOM"
+UUID=$(./bin/ads new "$SESSION_NAME" | grep UUID | awk '{print $2}')
 echo "Created session: $UUID"
 
 echo "Starting detached tmux session..."

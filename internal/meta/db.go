@@ -32,12 +32,14 @@ CREATE TABLE IF NOT EXISTS tmux_profiles (
 const defaultProfile = `
 # ADS Managed Tmux Configuration
 # Enable massive scrollback and mouse support
-set-option -g history-limit 100000
+set-option -g history-limit 999999999
 set -g mouse on
 
-# Auto-enter copy-mode (Ctrl-B [) seamlessly when scrolling the mouse wheel
-bind-key -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' 'copy-mode -e; send-keys -M'"
-bind-key -n WheelDownPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' ''"
+# Reverse mouse scrolling (scroll backwards naturally)
+bind-key -T copy-mode-vi WheelUpPane send-keys -X scroll-down
+bind-key -T copy-mode-vi WheelDownPane send-keys -X scroll-up
+bind-key -T copy-mode WheelUpPane send-keys -X scroll-down
+bind-key -T copy-mode WheelDownPane send-keys -X scroll-up
 
 # Provide native interactive federated search UI via floating popup
 bind-key -n C-s display-popup -E -w 90% -h 90% "{{.AdsBinaryPath}} search-interactive"
@@ -81,8 +83,9 @@ func Open() (*DB, error) {
 	// Seed default profile
 	_, _ = db.Exec(`INSERT OR IGNORE INTO tmux_profiles (name, config_text) VALUES ('default', ?)`, defaultProfile)
 
-	// Force update the default profile to ensure existing users get the new scrollback bindings
-	_, _ = db.Exec(`UPDATE tmux_profiles SET config_text = ? WHERE name = 'default'`, defaultProfile)
+	// Update the default profile to the new version ONLY if it still contains the old history limit
+	// This prevents wiping out user customizations.
+	_, _ = db.Exec(`UPDATE tmux_profiles SET config_text = ? WHERE name = 'default' AND config_text LIKE '%history-limit 100000%'`, defaultProfile)
 
 	// v2.0 Migrations
 	// Ignore errors if columns already exist

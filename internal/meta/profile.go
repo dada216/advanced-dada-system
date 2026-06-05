@@ -41,6 +41,14 @@ func (d *DB) UpdateProfileMetadata(name string, customer, server, project sql.Nu
 	return nil
 }
 
+func (d *DB) UpdateProfileConfig(name, configText string) error {
+	_, err := d.db.Exec(`UPDATE tmux_profiles SET config_text = ? WHERE name = ?`, configText, name)
+	if err != nil {
+		return fmt.Errorf("failed to update profile config: %w", err)
+	}
+	return nil
+}
+
 func (d *DB) CreateProfile(name string) error {
 	_, err := d.db.Exec(`INSERT INTO tmux_profiles (name, config_text) SELECT ?, config_text FROM tmux_profiles WHERE name = 'default'`, name)
 	if err != nil {

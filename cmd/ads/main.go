@@ -7,6 +7,7 @@ import (
 
 	"github.com/advanced-dada-system/ads/internal/meta"
 	"github.com/advanced-dada-system/ads/internal/orchestrator"
+	"github.com/advanced-dada-system/ads/internal/search"
 	"github.com/spf13/cobra"
 )
 
@@ -89,10 +90,34 @@ var runCmd = &cobra.Command{
 	},
 }
 
+var searchCmd = &cobra.Command{
+	Use:   "search [query]",
+	Short: "Search across all recorded sessions",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		term := args[0]
+		results, err := search.Query(term)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Search failed: %v\n", err)
+			os.Exit(1)
+		}
+
+		if len(results) == 0 {
+			fmt.Println("No matches found.")
+			return
+		}
+
+		for _, r := range results {
+			fmt.Printf("[%s] (row %d): %s\n", r.SessionName, r.RowID, r.Snippet)
+		}
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(searchCmd)
 }
 
 func main() {

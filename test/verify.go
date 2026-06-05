@@ -20,7 +20,7 @@ func main() {
 
 	appDir, _ := config.InitAppDataDir()
 	dbPath := filepath.Join(appDir, "sessions", fmt.Sprintf("%s.db", uuid))
-	
+
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		fmt.Printf("Failed to open DB: %v\n", err)

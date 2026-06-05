@@ -21,17 +21,40 @@ func Run(name string) error {
 		return err
 	}
 
-	if session.Status == "running" {
-		// Try to reattach
-		fmt.Printf("Session %s is already running. Attempting to reattach...\n", name)
-		attachCmd := exec.Command("tmux", "attach", "-t", session.UUID)
-		attachCmd.Stdin = os.Stdin
-		attachCmd.Stdout = os.Stdout
-		attachCmd.Stderr = os.Stderr
-		return attachCmd.Run()
+	// Check if tmux session already exists natively
+	hasSessionCmd := exec.Command("tmux", "has-session", "-t", session.UUID)
+	sessionExists := hasSessionCmd.Run() == nil
+
+	if sessionExists {
+		fmt.Printf("Session %s is already alive in tmux. Reattaching...\n", name)
+	} else {
+		// 1. Create detached tmux session
+		newCmd := exec.Command("tmux", "new-session", "-d", "-s", session.UUID, "bash")
+		if err := newCmd.Run(); err != nil {
+			return fmt.Errorf("failed to create tmux session: %w", err)
+		}
+
+		// Get absolute path of current executable to find ads-recorder
+		execPath, err := os.Executable()
+		if err != nil {
+			return fmt.Errorf("failed to get executable path: %w", err)
+		}
+		binDir := filepath.Dir(execPath)
+		recorderBin := filepath.Join(binDir, "ads-recorder")
+
+		// 2. Start pipe-pane
+		// Redirect stderr to a log file so we can catch any startup/db errors.
+		logFile := filepath.Join(os.TempDir(), fmt.Sprintf("ads-recorder-%s.log", session.UUID))
+		pipeCommand := fmt.Sprintf("'%s' --session '%s' 2>> '%s'", recorderBin, session.UUID, logFile)
+
+		// We use standard pipe-pane without '-o' which can toggle instead of forcefully open.
+		pipeCmd := exec.Command("tmux", "pipe-pane", "-t", session.UUID, pipeCommand)
+		if err := pipeCmd.Run(); err != nil {
+			return fmt.Errorf("failed to start pipe-pane: %w", err)
+		}
 	}
 
-	// Update status
+	// Update status to running
 	if err := db.UpdateSessionStatus(session.UUID, "running"); err != nil {
 		return err
 	}
@@ -40,31 +63,6 @@ func Run(name string) error {
 	defer func() {
 		_ = db.UpdateSessionStatus(session.UUID, "sealed")
 	}()
-
-	// 1. Create detached tmux session
-	newCmd := exec.Command("tmux", "new-session", "-d", "-s", session.UUID, "bash")
-	if err := newCmd.Run(); err != nil {
-		return fmt.Errorf("failed to create tmux session: %w", err)
-	}
-
-	// Get absolute path of current executable to find ads-recorder
-	execPath, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("failed to get executable path: %w", err)
-	}
-	binDir := filepath.Dir(execPath)
-	recorderBin := filepath.Join(binDir, "ads-recorder")
-
-	// 2. Start pipe-pane
-	// Redirect stderr to a log file so we can catch any startup/db errors.
-	logFile := filepath.Join(os.TempDir(), fmt.Sprintf("ads-recorder-%s.log", session.UUID))
-	pipeCommand := fmt.Sprintf("'%s' --session '%s' 2>> '%s'", recorderBin, session.UUID, logFile)
-
-	// We use standard pipe-pane without '-o' which can toggle instead of forcefully open.
-	pipeCmd := exec.Command("tmux", "pipe-pane", "-t", session.UUID, pipeCommand)
-	if err := pipeCmd.Run(); err != nil {
-		return fmt.Errorf("failed to start pipe-pane: %w", err)
-	}
 
 	// 3. Attach
 	attachCmd := exec.Command("tmux", "attach", "-t", session.UUID)

@@ -178,11 +178,27 @@ func (m model) View() string {
 			}
 
 			cleanedSnippet := cleanSnippet(r.Snippet)
-			line := fmt.Sprintf("%s%s %s %s",
+
+			rightContent := rowStyle.Render(fmt.Sprintf("(row %d)", r.RowID))
+			availableLeft := m.width - lipgloss.Width(rightContent) - 1
+			if availableLeft < 10 {
+				availableLeft = 10
+			}
+
+			leftContent := fmt.Sprintf("%s%s %s",
 				cursor,
 				sessionStyle.Render(fmt.Sprintf("[%s]", r.SessionName)),
-				rowStyle.Render(fmt.Sprintf("(row %d):", r.RowID)),
 				cleanedSnippet)
+
+			leftStyle := lipgloss.NewStyle().MaxWidth(availableLeft)
+			truncatedLeft := leftStyle.Render(leftContent)
+
+			padding := m.width - lipgloss.Width(truncatedLeft) - lipgloss.Width(rightContent)
+			if padding < 0 {
+				padding = 0
+			}
+
+			line := truncatedLeft + strings.Repeat(" ", padding) + rightContent
 
 			b.WriteString(lineStyle.Render(line) + "\n")
 		}

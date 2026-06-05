@@ -115,9 +115,9 @@ var listCmd = &cobra.Command{
 		}
 
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "NAME\tUUID\tTYPE\tSTATUS\tCREATED AT")
+		fmt.Fprintln(w, "NAME\tUUID\tTYPE\tSTATUS\tPROFILE\tCREATED AT")
 		for _, s := range sessions {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", s.Name, s.UUID, s.Type, s.Status, s.CreatedAt.Format("2006-01-02 15:04:05"))
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", s.Name, s.UUID, s.Type, s.Status, s.Profile, s.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 		w.Flush()
 	},

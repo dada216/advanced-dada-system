@@ -60,6 +60,24 @@ COMMANDS
            Injects invisible OSC 133 sequences into the terminal to boundary-
            mark prompts, user input, and command executions for the database.
 
+       profile [subcommand]
+           Manage tmux profiles and their associated metadata.
+           Subcommands:
+             new <name>      Creates a new profile by cloning the default config.
+             list            Lists all profiles and their configured metadata.
+
+       edit <profile-name>
+           Launches an interactive prompt to modify the customer, server, and 
+           project metadata associated with the specified profile.
+
+       update <session-name>
+           Updates an existing session's configuration.
+           Flags:
+             -p, --profile   Migrate the session to use the specified profile.
+             
+       search-interactive
+           Interactive TUI for federated search across all recorded sessions.
+
 ENVIRONMENT VARIABLES
        USER
            Used as the default SSH username when provisioning a remote session 
@@ -104,4 +122,4 @@ EXAMPLES
 SEE ALSO
        tmux(1), ssh(1), bash(1)
 
-ADS 0.4                          June 2026                              ADS(1)
+ADS 2.1                          June 2026                              ADS(1)

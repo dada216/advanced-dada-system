@@ -2,7 +2,13 @@
 
 ## Project Status
 
-Pre-implementation. Only design docs exist under `llm/design/`. No source code, `go.mod`, or build scripts yet.
+v0.1 implemented! Local sessions, raw recording, FTS5 dual-write, and federated search are functioning.
+
+## Agent Instructions / Coding Policies
+
+- **MANDATORY**: ALWAYS run the `Makefile` verification pipeline (`make tidy`, `make lint`, `make build`, and `make test`/`make test-integration`) before committing code or declaring a milestone complete.
+- Do not bypass `golangci-lint` errors. If formatting (`gofmt`) or code logic fails, correct it proactively.
+- All code commits must be atomic and strictly adhere to the architecture laid out in `llm/design/architecture.md`.
 
 ## Architecture
 

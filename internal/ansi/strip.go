@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	csiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
+	csiRegex = regexp.MustCompile(`\x1b\[[0-9;?]*[a-zA-Z]`)
 	oscRegex = regexp.MustCompile(`\x1b\].*?(?:\x07|\x1b\\)`)
 )
 

@@ -10,7 +10,7 @@ lint:
 	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 
 test:
-	go test -mod=vendor -v ./...
+	go test -mod=vendor -tags sqlite_fts5 -v ./...
 
 test-integration:
 	bash integration.sh

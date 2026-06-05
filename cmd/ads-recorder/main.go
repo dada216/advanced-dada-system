@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
+	"github.com/advanced-dada-system/ads/internal/sessiondb"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +23,31 @@ var rootCmd = &cobra.Command{
 			_ = cmd.Help()
 			os.Exit(1)
 		}
-		fmt.Printf("Recorder started for session: %s\n", sessionUUID)
+
+		db, err := sessiondb.Open(sessionUUID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening session database: %v\n", err)
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		buf := make([]byte, 4096)
+		for {
+			n, err := os.Stdin.Read(buf)
+			if n > 0 {
+				if wErr := db.WriteChunk(buf[:n]); wErr != nil {
+					fmt.Fprintf(os.Stderr, "Error writing chunk to db: %v\n", wErr)
+					os.Exit(1)
+				}
+			}
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading from stdin: %v\n", err)
+				os.Exit(1)
+			}
+		}
 	},
 }
 

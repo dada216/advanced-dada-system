@@ -15,6 +15,12 @@ test:
 test-integration:
 	bash integration.sh
 
+release:
+	@echo "Creating Git tag for release..."
+	@VERSION=$$(grep -Eo 'Version = "[^"]+"' cmd/ads/version.go | cut -d'"' -f2) && \
+	git tag -a $$VERSION -m "Release $$VERSION" && \
+	echo "Successfully tagged $$VERSION. Push with 'git push origin $$VERSION'"
+
 clean:
 	rm -rf bin/
 

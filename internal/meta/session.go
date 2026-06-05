@@ -11,4 +11,5 @@ type Session struct {
 	RemoteUser string
 	RemoteHost string
 	RemotePort int
+	Profile    string
 }

@@ -27,6 +27,7 @@ var rootCmd = &cobra.Command{
 }
 
 var isRemote bool
+var profileName string
 
 var newCmd = &cobra.Command{
 	Use:   "new [name]",
@@ -74,9 +75,9 @@ var newCmd = &cobra.Command{
 				}
 			}
 
-			uuid, err = db.CreateRemoteSession(name, user, host, port)
+			uuid, err = db.CreateRemoteSession(name, user, host, port, profileName)
 		} else {
-			uuid, err = db.CreateLocalSession(name)
+			uuid, err = db.CreateLocalSession(name, profileName)
 		}
 
 		if err != nil {
@@ -243,6 +244,7 @@ var authTestCmd = &cobra.Command{
 
 func init() {
 	newCmd.Flags().BoolVarP(&isRemote, "remote", "r", false, "Create a remote SSH session")
+	newCmd.Flags().StringVarP(&profileName, "profile", "p", "default", "Tmux profile to use")
 
 	authCmd.AddCommand(authTestCmd)
 

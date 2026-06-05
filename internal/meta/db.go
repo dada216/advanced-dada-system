@@ -19,8 +19,28 @@ CREATE TABLE IF NOT EXISTS sessions (
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 	remote_user TEXT,
 	remote_host TEXT,
-	remote_port INTEGER
+	remote_port INTEGER,
+	profile_name TEXT NOT NULL DEFAULT 'default'
 );
+
+CREATE TABLE IF NOT EXISTS tmux_profiles (
+	id INTEGER PRIMARY KEY,
+	name TEXT UNIQUE NOT NULL,
+	config_text TEXT NOT NULL
+);
+`
+
+const defaultProfile = `
+# ADS Managed Tmux Configuration
+# Enable massive scrollback and mouse support
+set-option -g history-limit 100000
+set -g mouse on
+
+# Provide interactive federated search
+bind-key s command-prompt -p "ADS Search Query:" "split-window -v -l 20 '{{.AdsBinaryPath}} search \"%%\" | less -R'"
+
+# Optional: Source user's local config if it exists
+if-shell "test -f ~/.tmux.conf" "source-file ~/.tmux.conf"
 `
 
 type DB struct {
@@ -49,6 +69,12 @@ func Open() (*DB, error) {
 	_, _ = db.Exec(`ALTER TABLE sessions ADD COLUMN remote_host TEXT;`)
 	_, _ = db.Exec(`ALTER TABLE sessions ADD COLUMN remote_port INTEGER;`)
 
+	// v0.4 Migrations
+	_, _ = db.Exec(`ALTER TABLE sessions ADD COLUMN profile_name TEXT NOT NULL DEFAULT 'default';`)
+
+	// Seed default profile
+	_, _ = db.Exec(`INSERT OR IGNORE INTO tmux_profiles (name, config_text) VALUES ('default', ?)`, defaultProfile)
+
 	return &DB{db: db}, nil
 }
 
@@ -56,18 +82,24 @@ func (d *DB) Close() error {
 	return d.db.Close()
 }
 
-func (d *DB) CreateLocalSession(name string) (string, error) {
+func (d *DB) CreateLocalSession(name, profile string) (string, error) {
+	if profile == "" {
+		profile = "default"
+	}
 	id := uuid.New().String()
-	_, err := d.db.Exec(`INSERT INTO sessions (uuid, name, type, status) VALUES (?, ?, 'local', 'created')`, id, name)
+	_, err := d.db.Exec(`INSERT INTO sessions (uuid, name, type, status, profile_name) VALUES (?, ?, 'local', 'created', ?)`, id, name, profile)
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 	return id, nil
 }
 
-func (d *DB) CreateRemoteSession(name, remoteUser, remoteHost string, remotePort int) (string, error) {
+func (d *DB) CreateRemoteSession(name, remoteUser, remoteHost string, remotePort int, profile string) (string, error) {
+	if profile == "" {
+		profile = "default"
+	}
 	id := uuid.New().String()
-	_, err := d.db.Exec(`INSERT INTO sessions (uuid, name, type, status, remote_user, remote_host, remote_port) VALUES (?, ?, 'remote', 'created', ?, ?, ?)`, id, name, remoteUser, remoteHost, remotePort)
+	_, err := d.db.Exec(`INSERT INTO sessions (uuid, name, type, status, remote_user, remote_host, remote_port, profile_name) VALUES (?, ?, 'remote', 'created', ?, ?, ?, ?)`, id, name, remoteUser, remoteHost, remotePort, profile)
 	if err != nil {
 		return "", fmt.Errorf("failed to create remote session: %w", err)
 	}
@@ -75,7 +107,7 @@ func (d *DB) CreateRemoteSession(name, remoteUser, remoteHost string, remotePort
 }
 
 func (d *DB) ListSessions() ([]Session, error) {
-	rows, err := d.db.Query(`SELECT uuid, name, type, status, created_at, remote_user, remote_host, remote_port FROM sessions ORDER BY created_at DESC`)
+	rows, err := d.db.Query(`SELECT uuid, name, type, status, created_at, remote_user, remote_host, remote_port, profile_name FROM sessions ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query sessions: %w", err)
 	}
@@ -86,7 +118,7 @@ func (d *DB) ListSessions() ([]Session, error) {
 		var s Session
 		var ru, rh sql.NullString
 		var rp sql.NullInt32
-		if err := rows.Scan(&s.UUID, &s.Name, &s.Type, &s.Status, &s.CreatedAt, &ru, &rh, &rp); err != nil {
+		if err := rows.Scan(&s.UUID, &s.Name, &s.Type, &s.Status, &s.CreatedAt, &ru, &rh, &rp, &s.Profile); err != nil {
 			return nil, fmt.Errorf("failed to scan session: %w", err)
 		}
 		if ru.Valid {
@@ -107,8 +139,8 @@ func (d *DB) GetSessionByName(name string) (*Session, error) {
 	var s Session
 	var ru, rh sql.NullString
 	var rp sql.NullInt32
-	err := d.db.QueryRow(`SELECT uuid, name, type, status, created_at, remote_user, remote_host, remote_port FROM sessions WHERE name = ?`, name).
-		Scan(&s.UUID, &s.Name, &s.Type, &s.Status, &s.CreatedAt, &ru, &rh, &rp)
+	err := d.db.QueryRow(`SELECT uuid, name, type, status, created_at, remote_user, remote_host, remote_port, profile_name FROM sessions WHERE name = ?`, name).
+		Scan(&s.UUID, &s.Name, &s.Type, &s.Status, &s.CreatedAt, &ru, &rh, &rp, &s.Profile)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("session '%s' not found", name)
@@ -125,6 +157,12 @@ func (d *DB) GetSessionByName(name string) (*Session, error) {
 		s.RemotePort = int(rp.Int32)
 	}
 	return &s, nil
+}
+
+func (d *DB) GetTmuxProfile(name string) (string, error) {
+	var config string
+	err := d.db.QueryRow(`SELECT config_text FROM tmux_profiles WHERE name = ?`, name).Scan(&config)
+	return config, err
 }
 
 func (d *DB) UpdateSessionStatus(uuid, status string) error {

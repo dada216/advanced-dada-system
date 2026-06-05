@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"text/template"
 
 	"github.com/advanced-dada-system/ads/internal/meta"
 )
@@ -35,18 +36,47 @@ func Run(name string) error {
 			shellCmd = fmt.Sprintf("ssh -t -p %d %s@%s", session.RemotePort, session.RemoteUser, session.RemoteHost)
 		}
 
-		newCmd := exec.Command("tmux", "new-session", "-d", "-s", session.UUID, shellCmd)
-		if err := newCmd.Run(); err != nil {
-			return fmt.Errorf("failed to create tmux session: %w", err)
-		}
-
-		// Get absolute path of current executable to find ads-recorder
+		// Get absolute path of current executable to find ads-recorder and set AdsBinaryPath
 		execPath, err := os.Executable()
 		if err != nil {
 			return fmt.Errorf("failed to get executable path: %w", err)
 		}
 		binDir := filepath.Dir(execPath)
 		recorderBin := filepath.Join(binDir, "ads-recorder")
+
+		// Render tmux profile
+		configTpl, err := db.GetTmuxProfile(session.Profile)
+		if err != nil {
+			return fmt.Errorf("failed to get tmux profile '%s': %w", session.Profile, err)
+		}
+
+		tpl, err := template.New("tmux").Parse(configTpl)
+		if err != nil {
+			return fmt.Errorf("failed to parse tmux profile template: %w", err)
+		}
+
+		confPath := filepath.Join(os.TempDir(), fmt.Sprintf("ads-tmux-%s.conf", session.UUID))
+		f, err := os.Create(confPath)
+		if err != nil {
+			return fmt.Errorf("failed to create tmux config file: %w", err)
+		}
+
+		err = tpl.Execute(f, struct {
+			AdsBinaryPath string
+			SessionUUID   string
+		}{
+			AdsBinaryPath: execPath,
+			SessionUUID:   session.UUID,
+		})
+		f.Close()
+		if err != nil {
+			return fmt.Errorf("failed to render tmux profile: %w", err)
+		}
+
+		newCmd := exec.Command("tmux", "-f", confPath, "new-session", "-d", "-s", session.UUID, shellCmd)
+		if err := newCmd.Run(); err != nil {
+			return fmt.Errorf("failed to create tmux session: %w", err)
+		}
 
 		// 2. Start pipe-pane
 		// Redirect stderr to a log file so we can catch any startup/db errors.

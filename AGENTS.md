@@ -2,10 +2,17 @@
 
 ## Project Status
 
-v0.1 implemented! Local sessions, raw recording, FTS5 dual-write, and federated search are functioning.
+v0.4.0 implemented! Local sessions, raw recording, FTS5 dual-write, federated search, and native bubbletea interactive TUI are functioning.
 
 ## Agent Instructions / Coding Policies
 
+- **VERSIONING & RELEASES**:
+  1. Semantic Versioning (`vMAJOR.MINOR.PATCH`) MUST be used.
+  2. Bug reports MUST automatically trigger a MINOR version bump (e.g. `v0.4.0` -> `v0.5.0`), exactly one minor bump per bug report.
+  3. Successive future versions MUST be laid out by the user under `llm/design/` files. The agent MUST read these files when discussing new versions.
+  4. Every bumped version MUST have a summary file tracked under `docs/updates/vX.Y.Z.md` describing improvements, bugfixes, and design choices.
+  5. Major version bumps require extensive documentation.
+  6. The `Makefile` includes a `make release` command to create a Git tag for the latest version.
 - **BUG TRACKING & GIT BRANCHING**:
   1. All bug reports MUST be documented as `.md` files in the `docs/bugs/` directory BEFORE writing any code.
   2. Fixes MUST be developed in a dedicated isolated Git branch (e.g., `git checkout -b fix/<bug-name>`).

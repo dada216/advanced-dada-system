@@ -1,6 +1,7 @@
 package sessiondb
 
 import (
+	"database/sql"
 	"io"
 	"os"
 	"os/exec"
@@ -195,5 +196,45 @@ exit
 
 	if !found {
 		t.Fatalf("Command history did not contain 'echo my_zsh_redrawn_command'. Got: %v", commands)
+	}
+}
+
+func TestSessionDBMisc(t *testing.T) {
+	uuidStr := uuid.New().String()
+	db, err := Open(uuidStr)
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	defer db.Close()
+	defer os.Remove(uuidStr + ".db")
+	defer os.Remove(uuidStr + ".db-shm")
+	defer os.Remove(uuidStr + ".db-wal")
+
+	// Test InjectMetadata
+	err = db.InjectMetadata(sql.NullString{String: "cust", Valid: true}, sql.NullString{String: "srv", Valid: true}, sql.NullString{String: "proj", Valid: true})
+	if err != nil {
+		t.Fatalf("InjectMetadata failed: %v", err)
+	}
+
+	// Second injection should do nothing (idempotent)
+	err = db.InjectMetadata(sql.NullString{String: "cust2", Valid: true}, sql.NullString{String: "srv2", Valid: true}, sql.NullString{String: "proj2", Valid: true})
+	if err != nil {
+		t.Fatalf("Second InjectMetadata failed: %v", err)
+	}
+
+	// Verify metadata
+	var c, s, p string
+	err = db.db.QueryRow("SELECT customer, server, project FROM metadata").Scan(&c, &s, &p)
+	if err != nil {
+		t.Fatalf("QueryRow failed: %v", err)
+	}
+	if c != "cust" || s != "srv" || p != "proj" {
+		t.Errorf("Metadata mismatch, got: %v %v %v", c, s, p)
+	}
+
+	// Test WriteChunk empty
+	err = db.WriteChunk([]byte{})
+	if err != nil {
+		t.Fatalf("WriteChunk empty failed: %v", err)
 	}
 }

@@ -50,7 +50,10 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		shellCmd := "bash"
+		shellCmd := os.Getenv("SHELL")
+		if shellCmd == "" {
+			shellCmd = "bash"
+		}
 		var shellArgs []string
 		if sessionInfo.Type == "remote" {
 			shellCmd = "ssh"

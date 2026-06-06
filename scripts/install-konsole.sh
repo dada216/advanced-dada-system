@@ -20,7 +20,7 @@ fi
 cat > "$KONSOLE_SHARE_DIR/$PROFILE_NAME" <<EOF
 [General]
 Name=ADS
-Command=bash -c 'NAME="ads-\$(date +%s)-\$RANDOM"; $ADS_BIN new "\$NAME" >/dev/null && exec $ADS_BIN run "\$NAME"'
+Command=sh -c 'NAME="ads-\$(date +%s)-\$RANDOM"; $ADS_BIN new "\$NAME" >/dev/null && exec $ADS_BIN run "\$NAME"'
 Icon=utilities-terminal
 
 [Appearance]

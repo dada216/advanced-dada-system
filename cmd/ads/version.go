@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "v5.0.0"
+var Version = "v5.1.0"
 var Codename = "Quokka"
 
 var versionCmd = &cobra.Command{

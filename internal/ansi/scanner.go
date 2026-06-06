@@ -2,7 +2,6 @@ package ansi
 
 import (
 	"bytes"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,70 +25,103 @@ func NewOSCScanner(db CommandInserter) *OSCScanner {
 	}
 }
 
-var osc133Re = regexp.MustCompile(`\x1b\]133;([A-D])(?:;([0-9]+))?(?:\x07|\x1b\\)`)
+var oscPrefix = []byte("\x1b]133;")
 
 func (s *OSCScanner) Write(p []byte) (n int, err error) {
 	s.stream.Write(p)
 
 	for {
 		data := s.stream.Bytes()
-		loc := osc133Re.FindIndex(data)
-		if loc == nil {
+
+		startIdx := bytes.Index(data, oscPrefix)
+		if startIdx == -1 {
+			partialIdx := -1
+			for i := len(oscPrefix) - 1; i > 0; i-- {
+				if len(data) >= i && bytes.Equal(data[len(data)-i:], oscPrefix[:i]) {
+					partialIdx = len(data) - i
+					break
+				}
+			}
+
+			if partialIdx == -1 {
+				if s.state == 2 {
+					s.commandBuf.Write(data)
+				}
+				s.stream.Reset()
+			} else {
+				if s.state == 2 {
+					s.commandBuf.Write(data[:partialIdx])
+				}
+				leftover := data[partialIdx:]
+				s.stream.Reset()
+				s.stream.Write(leftover)
+			}
 			break
 		}
 
-		markerData := data[loc[0]:loc[1]]
-		matches := osc133Re.FindSubmatch(markerData)
-		markerType := string(matches[1])
+		afterPrefix := data[startIdx+len(oscPrefix):]
 
-		textBefore := data[:loc[0]]
+		stIdx := bytes.IndexByte(afterPrefix, '\x07')
+		stLen := 1
 
-		if s.state == 2 {
-			s.commandBuf.Write(textBefore)
+		escBackslashIdx := bytes.Index(afterPrefix, []byte("\x1b\\"))
+		if stIdx == -1 || (escBackslashIdx != -1 && escBackslashIdx < stIdx) {
+			stIdx = escBackslashIdx
+			stLen = 2
 		}
 
-		s.stream.Next(loc[1])
+		if stIdx == -1 {
+			if s.state == 2 {
+				s.commandBuf.Write(data[:startIdx])
+			}
+			leftover := data[startIdx:]
+			s.stream.Reset()
+			s.stream.Write(leftover)
+			break
+		}
 
-		switch markerType {
-		case "A":
-			s.state = 1 // prompt
-		case "B":
-			s.state = 2 // input
-			s.commandBuf.Reset()
-		case "C":
-			s.state = 3 // execution
-			s.startTs = time.Now()
-		case "D":
-			s.state = 0 // done
-			exitCode := 0
-			if len(matches[2]) > 0 {
-				exitCode, _ = strconv.Atoi(string(matches[2]))
+		markerPayload := afterPrefix[:stIdx]
+		totalMarkerLen := startIdx + len(oscPrefix) + stIdx + stLen
+
+		if len(markerPayload) > 0 {
+			markerType := markerPayload[0]
+
+			if s.state == 2 {
+				s.commandBuf.Write(data[:startIdx])
 			}
 
-			cmdText := Strip(s.commandBuf.Bytes())
-			cmdText = strings.TrimSpace(cmdText)
+			s.stream.Next(totalMarkerLen)
 
-			if cmdText != "" {
-				_ = s.db.InsertCommand(cmdText, s.startTs, time.Now(), exitCode)
+			switch markerType {
+			case 'A':
+				s.state = 1
+			case 'B':
+				s.state = 2
+				s.commandBuf.Reset()
+			case 'C':
+				s.state = 3
+				s.startTs = time.Now()
+			case 'D':
+				s.state = 0
+				exitCode := 0
+				if len(markerPayload) > 2 && markerPayload[1] == ';' {
+					exitCode, _ = strconv.Atoi(string(markerPayload[2:]))
+				}
+
+				cmdText := Strip(s.commandBuf.Bytes())
+				cmdText = strings.TrimSpace(cmdText)
+
+				if cmdText != "" {
+					_ = s.db.InsertCommand(cmdText, s.startTs, time.Now(), exitCode)
+				}
+				s.commandBuf.Reset()
 			}
-			s.commandBuf.Reset()
+		} else {
+			if s.state == 2 {
+				s.commandBuf.Write(data[:startIdx+len(oscPrefix)])
+			}
+			s.stream.Next(startIdx + len(oscPrefix))
 		}
-	}
-
-	data := s.stream.Bytes()
-	lastEsc := bytes.LastIndexByte(data, '\x1b')
-	if lastEsc == -1 {
-		if s.state == 2 {
-			s.commandBuf.Write(data)
-		}
-		s.stream.Reset()
-	} else {
-		if s.state == 2 {
-			s.commandBuf.Write(data[:lastEsc])
-		}
-		leftover := data[lastEsc:]
-		s.stream.Reset()
-		s.stream.Write(leftover)
 	}
 
 	return len(p), nil

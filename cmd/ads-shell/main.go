@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"os/user"
-	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -86,9 +85,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		c := exec.Command(shellCmd, shellArgs...)
-		if sessionInfo.Type != "remote" {
-			c.Args[0] = "-" + filepath.Base(shellCmd)
-		}
 		c.Env = append(os.Environ(), fmt.Sprintf("ADS_SESSION=%s", sessionUUID))
 
 		// Start the command in a pty.

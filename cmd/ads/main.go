@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -245,6 +246,16 @@ var searchCmd = &cobra.Command{
 			return
 		}
 
+		if searchJSON {
+			b, err := json.MarshalIndent(results, "", "  ")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error formatting JSON: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println(string(b))
+			return
+		}
+
 		for _, r := range results {
 			fmt.Printf("[%s] (%s): %s\n", r.SessionName, r.Date, r.Snippet)
 		}
@@ -335,11 +346,13 @@ var authTestCmd = &cobra.Command{
 }
 
 var runShell string
+var searchJSON bool
 
 func init() {
 	newCmd.Flags().BoolVarP(&isRemote, "remote", "r", false, "Create a remote SSH session")
 	newCmd.Flags().StringVarP(&profileName, "profile", "p", "default", "Tmux profile to use")
 	runCmd.Flags().StringVarP(&runShell, "shell", "s", "", "Explicit shell to launch")
+	searchCmd.Flags().BoolVar(&searchJSON, "json", false, "Output results in JSON format")
 
 	authCmd.AddCommand(authTestCmd)
 

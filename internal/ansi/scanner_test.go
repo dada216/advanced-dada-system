@@ -7,10 +7,12 @@ import (
 
 type mockInserter struct {
 	commands []string
+	outputs  []string
 }
 
-func (m *mockInserter) InsertCommand(commandText string, startTs, endTs time.Time, exitCode int) error {
+func (m *mockInserter) InsertCommand(commandText, outputText string, startTs, endTs time.Time, exitCode int) error {
 	m.commands = append(m.commands, commandText)
+	m.outputs = append(m.outputs, outputText)
 	return nil
 }
 
@@ -42,9 +44,13 @@ func TestOSCScanner(t *testing.T) {
 	if mock.commands[0] != "bash-5.1$ echo hello" {
 		t.Errorf("unexpected command text: %q", mock.commands[0])
 	}
+	if mock.outputs[0] != "hello\r\n" {
+		t.Errorf("unexpected output text: %q", mock.outputs[0])
+	}
 
 	// Test 2: Chunked writes with random ANSI escape sequences (which trigger lastEsc bug)
 	mock.commands = nil
+	mock.outputs = nil
 	_, _ = scanner.Write([]byte("\x1b]133;A\x07"))
 	_, _ = scanner.Write([]byte("\x1b]133;B\x07bash-5.1$ "))
 	_, _ = scanner.Write([]byte("ls "))
@@ -59,6 +65,9 @@ func TestOSCScanner(t *testing.T) {
 	}
 	if mock.commands[0] != "bash-5.1$ ls -la" {
 		t.Errorf("Test 2 unexpected command text: %q", mock.commands[0])
+	}
+	if mock.outputs[0] != "output\r\n" {
+		t.Errorf("Test 2 unexpected output text: %q", mock.outputs[0])
 	}
 
 	// Test 3: The starvation/leak bug

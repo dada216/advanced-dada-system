@@ -426,6 +426,21 @@ func init() {
 	rootCmd.AddCommand(renameCmd)
 	rootCmd.AddCommand(authCmd)
 	rootCmd.AddCommand(configCmd)
+
+	// Special command for E2E testing
+	var testDiagnosticCmd = &cobra.Command{
+		Use:    "test-diagnostic [data]",
+		Hidden: true, // Hidden so it doesn't clutter the user's CLI
+		Short:  "Internal command for E2E pipeline verification",
+		Run: func(cmd *cobra.Command, args []string) {
+			data := "NO_DATA"
+			if len(args) > 0 {
+				data = args[0]
+			}
+			fmt.Printf("[ADS-DIAGNOSTIC-E2E] %s\n", data)
+		},
+	}
+	rootCmd.AddCommand(testDiagnosticCmd)
 }
 
 func main() {

@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/advanced-dada-system/ads/internal/ansi"
+	"github.com/advanced-dada-system/ads/internal/config"
 	"github.com/advanced-dada-system/ads/internal/meta"
 	"github.com/advanced-dada-system/ads/internal/sessiondb"
 	"github.com/creack/pty"
@@ -28,6 +29,12 @@ func getUserShell() string {
 	if userShellOverride != "" {
 		return userShellOverride
 	}
+
+	cfg, err := config.LoadConfig()
+	if err == nil && cfg.DefaultShell != "" {
+		return cfg.DefaultShell
+	}
+
 	u, err := user.Current()
 	if err == nil {
 		// Try getent first for LDAP/NIS compatibility

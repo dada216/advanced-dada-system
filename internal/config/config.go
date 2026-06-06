@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,4 +24,52 @@ func InitAppDataDir() (string, error) {
 	}
 
 	return adsDir, nil
+}
+
+type Config struct {
+	DefaultShell string `json:"default_shell"`
+}
+
+func GetConfigPath() (string, error) {
+	dir, err := InitAppDataDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "config.json"), nil
+}
+
+func LoadConfig() (*Config, error) {
+	path, err := GetConfigPath()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &Config{}, nil // return empty config
+		}
+		return nil, err
+	}
+
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}
+
+func SaveConfig(cfg *Config) error {
+	path, err := GetConfigPath()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0644)
 }

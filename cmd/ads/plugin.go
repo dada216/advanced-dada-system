@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/advanced-dada-system/ads/internal/meta"
@@ -97,6 +98,11 @@ var pluginEditCmd = &cobra.Command{
 		modelInput = strings.TrimSpace(modelInput)
 		if modelInput == "" {
 			modelInput = modelDisplay
+		} else {
+			idx, err := strconv.Atoi(modelInput)
+			if err == nil && idx >= 1 && idx <= max {
+				modelInput = result.Data[idx-1].ID
+			}
 		}
 
 		_ = db.SetPluginConfig("llm", "api_key", keyInput)

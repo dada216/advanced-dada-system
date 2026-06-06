@@ -191,7 +191,7 @@ func (m model) View() string {
 
 			cleanedSnippet := cleanSnippet(r.Snippet)
 
-			rightContent := rowStyle.Render(fmt.Sprintf("(row %d)", r.RowID))
+			rightContent := rowStyle.Render(fmt.Sprintf("(%s)", r.Date))
 			availableLeft := m.width - lipgloss.Width(rightContent) - 1
 			if availableLeft < 10 {
 				availableLeft = 10

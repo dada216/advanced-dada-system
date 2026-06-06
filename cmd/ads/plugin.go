@@ -128,13 +128,13 @@ var pluginListCmd = &cobra.Command{
 		currentModel, _ := db.GetPluginConfig("llm", "model")
 
 		fmt.Printf("--- Configuration for Plugin: %s ---\n", pluginName)
-		
+
 		maskedKey := "None"
 		if currentKey != "" && len(currentKey) > 8 {
 			maskedKey = currentKey[:4] + "..." + currentKey[len(currentKey)-4:]
 		}
 		fmt.Printf("API Key: %s\n", maskedKey)
-		
+
 		modelDisplay := "None (defaults to openai/gpt-3.5-turbo)"
 		if currentModel != "" {
 			modelDisplay = currentModel

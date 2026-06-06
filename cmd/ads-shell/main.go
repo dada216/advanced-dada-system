@@ -24,13 +24,18 @@ var (
 )
 
 func getUserShell() string {
-	shell := os.Getenv("SHELL")
-	if shell != "" {
-		return shell
-	}
-
 	u, err := user.Current()
 	if err == nil {
+		// Try getent first for LDAP/NIS compatibility
+		out, err := exec.Command("getent", "passwd", u.Username).Output()
+		if err == nil {
+			parts := strings.Split(strings.TrimSpace(string(out)), ":")
+			if len(parts) >= 7 && parts[6] != "" {
+				return parts[6]
+			}
+		}
+
+		// Fallback to /etc/passwd directly
 		file, err := os.Open("/etc/passwd")
 		if err == nil {
 			defer file.Close()
@@ -38,12 +43,18 @@ func getUserShell() string {
 			for scanner.Scan() {
 				line := scanner.Text()
 				parts := strings.Split(line, ":")
-				if len(parts) >= 7 && parts[0] == u.Username {
+				if len(parts) >= 7 && parts[0] == u.Username && parts[6] != "" {
 					return parts[6]
 				}
 			}
 		}
 	}
+
+	shell := os.Getenv("SHELL")
+	if shell != "" {
+		return shell
+	}
+
 	return "bash"
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/advanced-dada-system/ads/internal/config"
@@ -17,6 +18,7 @@ type Result struct {
 	SessionUUID string
 	RowID       int64
 	Snippet     string
+	Date        string
 }
 
 func Query(term string) ([]Result, error) {
@@ -39,8 +41,11 @@ func Query(term string) ([]Result, error) {
 	var results []Result
 
 	// Use ANSI color codes for highlight markers: Red text for matches
-	query := `SELECT rowid, highlight(fts_index, 0, "` + "\033[31m" + `", "` + "\033[0m" + `") 
-              FROM fts_index WHERE fts_index MATCH ? ORDER BY rank LIMIT 5`
+	query := `SELECT fts_index.rowid, io_stream.ts, highlight(fts_index, 0, "` + "\033[31m" + `", "` + "\033[0m" + `") 
+              FROM fts_index 
+              JOIN io_stream ON fts_index.rowid = io_stream.id
+              WHERE fts_index MATCH ? 
+              ORDER BY io_stream.ts DESC LIMIT 20`
 
 	for _, s := range sessions {
 		// Use _busy_timeout to prevent SQLITE_BUSY silent skips when ads-recorder is actively writing
@@ -69,13 +74,18 @@ func Query(term string) ([]Result, error) {
 			var r Result
 			r.SessionName = s.Name
 			r.SessionUUID = s.UUID
-			if err := rows.Scan(&r.RowID, &r.Snippet); err == nil {
+			if err := rows.Scan(&r.RowID, &r.Date, &r.Snippet); err == nil {
 				results = append(results, r)
 			}
 		}
 		rows.Close()
 		db.Close()
 	}
+
+	// Sort results globally by date, descending
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Date > results[j].Date
+	})
 
 	return results, nil
 }

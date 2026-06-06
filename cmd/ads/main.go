@@ -191,7 +191,7 @@ var searchCmd = &cobra.Command{
 		}
 
 		for _, r := range results {
-			fmt.Printf("[%s] (row %d): %s\n", r.SessionName, r.RowID, r.Snippet)
+			fmt.Printf("[%s] (%s): %s\n", r.SessionName, r.Date, r.Snippet)
 		}
 	},
 }

@@ -64,6 +64,12 @@ func Open(uuid string) (*DB, error) {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
+	// Schema migrations for existing databases (< v5.1.0)
+	var count int
+	if err := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('command_history') WHERE name='output_text'").Scan(&count); err == nil && count == 0 {
+		_, _ = db.Exec("ALTER TABLE command_history ADD COLUMN output_text TEXT")
+	}
+
 	return &DB{db: db}, nil
 }
 

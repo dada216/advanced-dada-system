@@ -146,6 +146,11 @@ Code quality is enforced using `golangci-lint` (v2).
 ### Gitflow and Commits
 Agents must follow standard gitflow practices for branching and committing. Commits should be atomic, well-documented, and created using predefined project conventions. Agents should utilize internal skills (like `mastering-git-cli`) to handle VCS operations correctly.
 
+### Privileged Host Execution and Auditing
+When an agent requires execution of commands directly on the user's host (e.g., executing system-level package upgrades via `dnf`), the execution MUST be routed exclusively through the `scripts/host-exec.sh` wrapper script. This guarantees:
+1. **Security & Auditing:** Every host-level command is rigorously intercepted and recorded in a human-readable format to `docs/security/host_exec.log`.
+2. **Namespace Injection:** The agent container leverages `--privileged` and `--pid=host` to perform an `nsenter` breakout. This eliminates the need for complex SSH agent configurations or `sudoers` password interventions, allowing autonomous, transparent, and strictly audited host interactions.
+
 ---
 
 ## 11. Conclusion

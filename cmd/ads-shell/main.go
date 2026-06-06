@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/advanced-dada-system/ads/internal/ansi"
@@ -19,6 +23,30 @@ import (
 var (
 	sessionUUID string
 )
+
+func getUserShell() string {
+	shell := os.Getenv("SHELL")
+	if shell != "" {
+		return shell
+	}
+
+	u, err := user.Current()
+	if err == nil {
+		file, err := os.Open("/etc/passwd")
+		if err == nil {
+			defer file.Close()
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := scanner.Text()
+				parts := strings.Split(line, ":")
+				if len(parts) >= 7 && parts[0] == u.Username {
+					return parts[6]
+				}
+			}
+		}
+	}
+	return "bash"
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "ads-shell",
@@ -50,10 +78,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		shellCmd := os.Getenv("SHELL")
-		if shellCmd == "" {
-			shellCmd = "bash"
-		}
+		shellCmd := getUserShell()
 		var shellArgs []string
 		if sessionInfo.Type == "remote" {
 			shellCmd = "ssh"
@@ -61,6 +86,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		c := exec.Command(shellCmd, shellArgs...)
+		if sessionInfo.Type != "remote" {
+			c.Args[0] = "-" + filepath.Base(shellCmd)
+		}
 		c.Env = append(os.Environ(), fmt.Sprintf("ADS_SESSION=%s", sessionUUID))
 
 		// Start the command in a pty.

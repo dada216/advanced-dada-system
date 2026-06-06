@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "v4.10.4"
-var Codename = "Pangolin"
+var Version = "v5.0.0"
+var Codename = "Quokka"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",

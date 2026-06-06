@@ -20,7 +20,7 @@ fi
 cat > "$KONSOLE_SHARE_DIR/$PROFILE_NAME" <<EOF
 [General]
 Name=ADS
-Command=$ADS_BIN launch
+Command=$ADS_BIN launch --shell zsh
 Icon=utilities-terminal
 
 [Appearance]

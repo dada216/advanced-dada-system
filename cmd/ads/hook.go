@@ -39,7 +39,7 @@ autoload -Uz add-zsh-hook
 add-zsh-hook precmd _ads_precmd
 add-zsh-hook preexec _ads_preexec
 
-PROMPT="${PROMPT}%{\033]133;B\007%}"
+PROMPT=$PROMPT$'%{\e]133;B\a%}'
 `)
 		} else {
 			fmt.Printf("Shell '%s' is not supported yet.\n", shell)

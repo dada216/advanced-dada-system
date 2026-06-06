@@ -29,7 +29,7 @@ SEARCH_RESULT=$(./scripts/host-exec.sh "/usr/bin/ads search $TEST_PAYLOAD")
 echo "=== Search Verification ==="
 echo "$SEARCH_RESULT"
 
-if echo "$SEARCH_RESULT" | grep -q "[ADS-DIAGNOSTIC-E2E] $TEST_PAYLOAD"; then
+if echo "$SEARCH_RESULT" | grep -Fq "[ADS-DIAGNOSTIC-E2E] $TEST_PAYLOAD"; then
     echo "✅ E2E PIPELINE SUCCESS: The host successfully recorded and retrieved the diagnostic execution!"
     exit 0
 else

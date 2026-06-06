@@ -35,7 +35,7 @@ _ads_precmd() {
     fi
 }
 _ads_preexec() {
-    printf "\033]133;C\007"
+    printf "\033]133;C;%s\007" "$1"
 }
 
 autoload -Uz add-zsh-hook

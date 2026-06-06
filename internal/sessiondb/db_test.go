@@ -160,6 +160,8 @@ printf "\033]133;B\007"
 printf "\033]133;C;echo my_zsh_redrawn_command\007"
 # Command executes
 echo my_zsh_redrawn_command
+# Command finishes, emit D marker
+printf "\033]133;D;0\007"
 exit
 `
 	_, _ = ptmx.Write([]byte(zshSimulation))

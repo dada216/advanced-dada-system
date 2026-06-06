@@ -114,12 +114,67 @@ var listCmd = &cobra.Command{
 			return
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "NAME\tUUID\tTYPE\tSTATUS\tPROFILE\tCREATED AT")
+		currentUUID := os.Getenv("ADS_SESSION")
+
+		var namedSessions []meta.Session
+		var randomSessions []meta.Session
+
 		for _, s := range sessions {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", s.Name, s.UUID, s.Type, s.Status, s.Profile, s.CreatedAt.Format("2006-01-02 15:04:05"))
+			if strings.HasPrefix(s.Name, "ads-") {
+				randomSessions = append(randomSessions, s)
+			} else {
+				namedSessions = append(namedSessions, s)
+			}
 		}
-		w.Flush()
+
+		printTable := func(title string, sList []meta.Session) {
+			if len(sList) == 0 {
+				return
+			}
+			fmt.Printf("=== %s ===\n", title)
+			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+			fmt.Fprintln(w, "CURRENT\tNAME\tUUID\tTYPE\tSTATUS\tPROFILE\tCREATED AT")
+			for _, s := range sList {
+				currentMarker := ""
+				if s.UUID == currentUUID {
+					currentMarker = "*"
+				}
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", currentMarker, s.Name, s.UUID, s.Type, s.Status, s.Profile, s.CreatedAt.Format("2006-01-02 15:04:05"))
+			}
+			w.Flush()
+			fmt.Println()
+		}
+
+		printTable("Named Sessions", namedSessions)
+		printTable("Auto-Generated (Unnamed) Sessions", randomSessions)
+	},
+}
+
+var renameCmd = &cobra.Command{
+	Use:   "rename [new-name]",
+	Short: "Rename the current active session",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		currentUUID := os.Getenv("ADS_SESSION")
+		if currentUUID == "" {
+			fmt.Fprintln(os.Stderr, "Error: You must be inside an active ADS session to rename it.")
+			os.Exit(1)
+		}
+
+		newName := args[0]
+		db, err := meta.Open()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening meta database: %v\n", err)
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		if err := db.RenameSession(currentUUID, newName); err != nil {
+			fmt.Fprintf(os.Stderr, "Error renaming session: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Session successfully renamed to '%s'\n", newName)
 	},
 }
 
@@ -293,6 +348,7 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(searchCmd)
 	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(renameCmd)
 	rootCmd.AddCommand(authCmd)
 }
 

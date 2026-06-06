@@ -359,6 +359,51 @@ var authTestCmd = &cobra.Command{
 	},
 }
 
+var configCmd = &cobra.Command{
+	Use:   "config [key] [value]",
+	Short: "Get or set global configuration",
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
+			os.Exit(1)
+		}
+
+		if len(args) == 0 {
+			b, _ := json.MarshalIndent(cfg, "", "  ")
+			fmt.Println(string(b))
+			return
+		}
+
+		key := args[0]
+		if len(args) == 1 {
+			switch key {
+			case "default_shell":
+				fmt.Println(cfg.DefaultShell)
+			default:
+				fmt.Fprintf(os.Stderr, "Unknown config key: %s\n", key)
+				os.Exit(1)
+			}
+			return
+		}
+
+		val := args[1]
+		switch key {
+		case "default_shell":
+			cfg.DefaultShell = val
+		default:
+			fmt.Fprintf(os.Stderr, "Unknown config key: %s\n", key)
+			os.Exit(1)
+		}
+
+		if err := config.SaveConfig(cfg); err != nil {
+			fmt.Fprintf(os.Stderr, "Error saving config: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Set %s = %s\n", key, val)
+	},
+}
+
 var runShell string
 var searchJSON bool
 
@@ -377,6 +422,7 @@ func init() {
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(renameCmd)
 	rootCmd.AddCommand(authCmd)
+	rootCmd.AddCommand(configCmd)
 }
 
 func main() {

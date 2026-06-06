@@ -35,7 +35,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !strings.Contains(text, "hello from tmux") {
+	if !strings.Contains(text, "hello from ads-shell") {
 		fmt.Printf("Expected text not found in DB. Got: %s\n", text)
 		os.Exit(1)
 	}

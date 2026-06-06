@@ -7,14 +7,8 @@ SESSION_NAME="test-session-$RANDOM-$RANDOM"
 UUID=$(./bin/ads new "$SESSION_NAME" | grep UUID | awk '{print $2}')
 echo "Created session: $UUID"
 
-echo "Starting detached tmux session..."
-tmux new-session -d -s "$UUID" "sleep 1 && echo 'hello from tmux' && sleep 2"
-
-echo "Piping pane to ads-recorder..."
-tmux pipe-pane -t "$UUID" "$PWD/bin/ads-recorder --session $UUID 2>> /tmp/ads-recorder-$UUID.log"
-
-echo "Waiting for session to finish..."
-sleep 3
+echo "Piping commands to ads-shell..."
+echo "sleep 1 && echo 'hello from ads-shell' && sleep 1 && exit" | ./bin/ads-shell --session "$UUID"
 
 echo "Checking DB..."
 if go run -mod=vendor -tags sqlite_fts5 test/verify.go "$UUID"; then
@@ -36,7 +30,5 @@ if go run -mod=vendor -tags sqlite_fts5 test/verify.go "$UUID"; then
     echo "All tests passed successfully."
 else
     echo "FAILURE: Output not found in DB."
-    echo "Recorder log:"
-    cat /tmp/ads-recorder-$UUID.log
     exit 1
 fi

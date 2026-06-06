@@ -1,10 +1,10 @@
-.PHONY: build lint test clean tidy install
+.PHONY: build lint test clean tidy install install-konsole
 
 all: lint test build
 
 build:
 	go build -mod=vendor -tags sqlite_fts5 -o bin/ads ./cmd/ads
-	go build -mod=vendor -tags sqlite_fts5 -o bin/ads-recorder ./cmd/ads-recorder
+	go build -mod=vendor -tags sqlite_fts5 -o bin/ads-shell ./cmd/ads-shell
 	go build -mod=vendor -tags sqlite_fts5 -o bin/ads-plugin-search ./cmd/ads-plugin-search
 	go build -mod=vendor -tags sqlite_fts5 -o bin/ads-plugin-llm ./cmd/ads-plugin-llm
 
@@ -36,10 +36,10 @@ install: build
 	else \
 		echo "Successfully installed 'ads' to /usr/bin/ads"; \
 	fi
-	@if ! install -m 755 bin/ads-recorder /usr/bin/ads-recorder 2>/dev/null; then \
-		echo "WARNING: Failed to install 'ads-recorder' to /usr/bin/. It might be running or permission denied. Please run 'sudo make install'."; \
+	@if ! install -m 755 bin/ads-shell /usr/bin/ads-shell 2>/dev/null; then \
+		echo "WARNING: Failed to install 'ads-shell' to /usr/bin/. It might be running or permission denied. Please run 'sudo make install'."; \
 	else \
-		echo "Successfully installed 'ads-recorder' to /usr/bin/ads-recorder"; \
+		echo "Successfully installed 'ads-shell' to /usr/bin/ads-shell"; \
 	fi
 	@if ! install -m 755 bin/ads-plugin-search /usr/bin/ads-plugin-search 2>/dev/null; then \
 		echo "WARNING: Failed to install 'ads-plugin-search'."; \
@@ -51,3 +51,7 @@ install: build
 	else \
 		echo "Successfully installed 'ads-plugin-llm'"; \
 	fi
+
+install-konsole:
+	@echo "Installing Konsole profile..."
+	@bash scripts/install-konsole.sh

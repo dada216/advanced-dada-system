@@ -97,6 +97,30 @@ func (d *DB) GetSessionByName(name string) (*Session, error) {
 	return &s, nil
 }
 
+func (d *DB) GetSessionByUUID(uuid string) (*Session, error) {
+	var s Session
+	var ru, rh sql.NullString
+	var rp sql.NullInt32
+	err := d.db.QueryRow(`SELECT uuid, name, type, status, created_at, remote_user, remote_host, remote_port, profile_name FROM sessions WHERE uuid = ?`, uuid).
+		Scan(&s.UUID, &s.Name, &s.Type, &s.Status, &s.CreatedAt, &ru, &rh, &rp, &s.Profile)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("session with uuid '%s' not found", uuid)
+		}
+		return nil, fmt.Errorf("failed to query session: %w", err)
+	}
+	if ru.Valid {
+		s.RemoteUser = ru.String
+	}
+	if rh.Valid {
+		s.RemoteHost = rh.String
+	}
+	if rp.Valid {
+		s.RemotePort = int(rp.Int32)
+	}
+	return &s, nil
+}
+
 func (d *DB) UpdateSessionStatus(uuid, status string) error {
 	_, err := d.db.Exec(`UPDATE sessions SET status = ? WHERE uuid = ?`, status, uuid)
 	if err != nil {

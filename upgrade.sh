@@ -11,11 +11,8 @@ if [ -n "$TAGS" ]; then
     echo "Running with tags: $TAGS"
 fi
 
-# Ask for sudo credentials once upfront and keep them alive
-echo "Requesting sudo privileges for installation tasks..."
-sudo -v
-# Keep-alive: update existing sudo time stamp until script has finished
-while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+# Interactive sudo validation is removed to allow headless autonomous 
+# upgrades via strict NOPASSWD sudoers rules for dnf.
 
 # Ensure rpmbuild is installed
 if ! command -v rpmbuild &> /dev/null; then
@@ -44,8 +41,9 @@ echo ""
 echo "Building RPM package..."
 make rpm
 
-# Find the latest built RPM
-RPM_FILE=$(ls -t build/rpm/RPMS/x86_64/ads-*.rpm 2>/dev/null | head -n 1)
+# Find the latest built RPM using absolute paths to support strict sudoers definitions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RPM_FILE=$(ls -t "$SCRIPT_DIR"/build/rpm/RPMS/x86_64/ads-*.rpm 2>/dev/null | head -n 1)
 
 if [ -z "$RPM_FILE" ]; then
     echo "Error: RPM file not found in build/rpm/RPMS/x86_64/"

@@ -25,6 +25,11 @@ v1.0.0 implemented! Local sessions, raw recording, FTS5 dual-write, federated se
 - Do not bypass `golangci-lint` errors. If formatting (`gofmt`) or code logic fails, correct it proactively.
 - All code commits must be atomic and strictly adhere to the architecture laid out in `llm/design/architecture.md`.
 
+## Agent Privileged Host Execution Policy
+
+- **AUTHORIZED PACKAGE**: The agent is authorized to execute commands directly on the user's host machine ONLY by exclusively routing them through the `scripts/host-exec.sh` wrapper script. No exceptions.
+- **AUDIT TRAIL**: The `host-exec.sh` script automatically intercepts the command and generates a strict, human-readable audit trail logged directly to `docs/security/host_exec.log`.
+- **CONTAINER STATE**: In order for this functionality to operate, the agent's execution container MUST be initialized with the `--privileged` and `--pid=host` podman/docker flags to permit `nsenter` namespace injection.
 ## Architecture
 
 Two CLI binaries (may ship as a single executable with subcommands):

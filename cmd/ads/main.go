@@ -128,19 +128,22 @@ var listCmd = &cobra.Command{
 			}
 		}
 
+		appDir, _ := config.InitAppDataDir()
+
 		printTable := func(title string, sList []meta.Session) {
 			if len(sList) == 0 {
 				return
 			}
 			fmt.Printf("=== %s ===\n", title)
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "CURRENT\tNAME\tUUID\tTYPE\tSTATUS\tPROFILE\tCREATED AT")
+			fmt.Fprintln(w, "CURRENT\tNAME\tUUID\tTYPE\tSTATUS\tPROFILE\tCREATED AT\tDB PATH")
 			for _, s := range sList {
 				currentMarker := ""
 				if s.UUID == currentUUID {
 					currentMarker = "*"
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", currentMarker, s.Name, s.UUID, s.Type, s.Status, s.Profile, s.CreatedAt.Format("2006-01-02 15:04:05"))
+				dbPath := filepath.Join(appDir, "sessions", s.UUID+".db")
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", currentMarker, s.Name, s.UUID, s.Type, s.Status, s.Profile, s.CreatedAt.Format("2006-01-02 15:04:05"), dbPath)
 			}
 			w.Flush()
 			fmt.Println()

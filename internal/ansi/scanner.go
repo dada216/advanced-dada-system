@@ -2,6 +2,8 @@ package ansi
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -116,7 +118,11 @@ func (s *OSCScanner) Write(p []byte) (n int, err error) {
 				cmdText = strings.TrimSpace(cmdText)
 
 				if cmdText != "" {
-					_ = s.db.InsertCommand(cmdText, s.startTs, time.Now(), exitCode)
+					if err := s.db.InsertCommand(cmdText, s.startTs, time.Now(), exitCode); err != nil {
+						// We don't want to panic, but failing silently is bad.
+						// The busy_timeout handles most locks, but we should know if it completely fails.
+						fmt.Fprintf(os.Stderr, "ads-shell error: failed to insert command history: %v\n", err)
+					}
 				}
 				s.commandBuf.Reset()
 			}

@@ -51,8 +51,8 @@ func Open(uuid string) (*DB, error) {
 
 	dbPath := filepath.Join(sessionsDir, fmt.Sprintf("%s.db", uuid))
 
-	// Open in WAL mode explicitly via DSN
-	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_synchronous=NORMAL")
+	// Open in WAL mode explicitly via DSN with busy_timeout to prevent database locked errors
+	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open session database: %w", err)
 	}

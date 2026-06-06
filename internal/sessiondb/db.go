@@ -16,12 +16,14 @@ const schema = `
 CREATE TABLE IF NOT EXISTS io_stream (
 	id   INTEGER PRIMARY KEY,
 	ts   DATETIME DEFAULT CURRENT_TIMESTAMP,
+	direction INTEGER DEFAULT 1,
 	data BLOB NOT NULL
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS fts_index USING fts5(text);
 CREATE TABLE IF NOT EXISTS command_history (
     id INTEGER PRIMARY KEY,
     command_text TEXT,
+    output_text TEXT,
     start_ts DATETIME,
     end_ts DATETIME,
     exit_code INTEGER
@@ -65,8 +67,8 @@ func Open(uuid string) (*DB, error) {
 	return &DB{db: db}, nil
 }
 
-func (d *DB) InsertCommand(commandText string, startTs, endTs time.Time, exitCode int) error {
-	_, err := d.db.Exec(`INSERT INTO command_history (command_text, start_ts, end_ts, exit_code) VALUES (?, ?, ?, ?)`, commandText, startTs, endTs, exitCode)
+func (d *DB) InsertCommand(commandText, outputText string, startTs, endTs time.Time, exitCode int) error {
+	_, err := d.db.Exec(`INSERT INTO command_history (command_text, output_text, start_ts, end_ts, exit_code) VALUES (?, ?, ?, ?, ?)`, commandText, outputText, startTs, endTs, exitCode)
 	return err
 }
 
@@ -84,7 +86,7 @@ func (d *DB) Close() error {
 	return d.db.Close()
 }
 
-func (d *DB) WriteChunk(data []byte) error {
+func (d *DB) WriteChunk(data []byte, direction int) error {
 	if len(data) == 0 {
 		return nil
 	}
@@ -94,7 +96,7 @@ func (d *DB) WriteChunk(data []byte) error {
 		return fmt.Errorf("failed to begin tx: %w", err)
 	}
 
-	res, err := tx.Exec(`INSERT INTO io_stream (data) VALUES (?)`, data)
+	res, err := tx.Exec(`INSERT INTO io_stream (direction, data) VALUES (?, ?)`, direction, data)
 	if err != nil {
 		_ = tx.Rollback()
 		return fmt.Errorf("failed to insert io_stream: %w", err)

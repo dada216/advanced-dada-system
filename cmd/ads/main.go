@@ -263,11 +263,11 @@ var searchCmd = &cobra.Command{
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [name]",
-	Short: "Delete a session",
+	Use:   "delete [pattern]",
+	Short: "Delete session(s) matching a name or glob pattern",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		name := args[0]
+		pattern := args[0]
 		db, err := meta.Open()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error opening meta database: %v\n", err)
@@ -275,22 +275,36 @@ var deleteCmd = &cobra.Command{
 		}
 		defer db.Close()
 
-		session, err := db.GetSessionByName(name)
+		sessions, err := db.ListSessions()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting session: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error listing sessions: %v\n", err)
 			os.Exit(1)
+		}
+
+		var toDelete []meta.Session
+		for _, s := range sessions {
+			matched, err := filepath.Match(pattern, s.Name)
+			if err == nil && matched {
+				toDelete = append(toDelete, s)
+			}
+		}
+
+		if len(toDelete) == 0 {
+			fmt.Printf("No sessions matched '%s'\n", pattern)
+			return
 		}
 
 		appDir, _ := config.InitAppDataDir()
-		dbPath := filepath.Join(appDir, "sessions", session.UUID+".db")
-		_ = os.Remove(dbPath)
+		for _, s := range toDelete {
+			dbPath := filepath.Join(appDir, "sessions", s.UUID+".db")
+			_ = os.Remove(dbPath)
 
-		if err := db.DeleteSession(session.UUID); err != nil {
-			fmt.Fprintf(os.Stderr, "Error deleting session from meta db: %v\n", err)
-			os.Exit(1)
+			if err := db.DeleteSession(s.UUID); err != nil {
+				fmt.Fprintf(os.Stderr, "Error deleting session '%s' from meta db: %v\n", s.Name, err)
+			} else {
+				fmt.Printf("Session '%s' deleted successfully.\n", s.Name)
+			}
 		}
-
-		fmt.Printf("Session '%s' deleted successfully.\n", name)
 	},
 }
 

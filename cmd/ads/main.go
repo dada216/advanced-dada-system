@@ -129,7 +129,7 @@ var runCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
-		err := orchestrator.Run(name)
+		err := orchestrator.Run(name, runShell)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				fmt.Printf("Warning: Session '%s' does not exist.\n", name)
@@ -156,7 +156,7 @@ var runCmd = &cobra.Command{
 
 					fmt.Printf("Created local session %s (UUID: %s)\n", name, uuid)
 
-					if errRun := orchestrator.Run(name); errRun != nil {
+					if errRun := orchestrator.Run(name, runShell); errRun != nil {
 						fmt.Fprintf(os.Stderr, "Error running session: %v\n", errRun)
 						os.Exit(1)
 					}
@@ -279,9 +279,12 @@ var authTestCmd = &cobra.Command{
 	},
 }
 
+var runShell string
+
 func init() {
 	newCmd.Flags().BoolVarP(&isRemote, "remote", "r", false, "Create a remote SSH session")
 	newCmd.Flags().StringVarP(&profileName, "profile", "p", "default", "Tmux profile to use")
+	runCmd.Flags().StringVarP(&runShell, "shell", "s", "", "Explicit shell to launch")
 
 	authCmd.AddCommand(authTestCmd)
 

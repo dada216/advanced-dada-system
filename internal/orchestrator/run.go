@@ -10,10 +10,10 @@ import (
 	"github.com/advanced-dada-system/ads/internal/sessiondb"
 )
 
-func Run(name string) error {
+func Run(name string, shellOverride string) error {
 	db, err := meta.Open()
 	if err != nil {
-		return fmt.Errorf("failed to open meta db: %w", err)
+		return fmt.Errorf("error opening meta database: %w", err)
 	}
 	defer db.Close()
 
@@ -46,6 +46,9 @@ func Run(name string) error {
 
 	// We use syscall.Exec to replace the current process with ads-shell
 	args := []string{"ads-shell", "--session", session.UUID}
+	if shellOverride != "" {
+		args = append(args, "--shell", shellOverride)
+	}
 	env := os.Environ()
 
 	if err := syscall.Exec(shellBin, args, env); err != nil {

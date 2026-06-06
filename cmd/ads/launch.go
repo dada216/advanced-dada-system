@@ -31,13 +31,16 @@ var launchCmd = &cobra.Command{
 
 		// fmt.Printf("Created local session %s (UUID: %s)\n", name, uuid)
 
-		if err := orchestrator.Run(name); err != nil {
+		if err := orchestrator.Run(name, launchShell); err != nil {
 			fmt.Fprintf(os.Stderr, "Error running session: %v\n", err)
 			os.Exit(1)
 		}
 	},
 }
 
+var launchShell string
+
 func init() {
+	launchCmd.Flags().StringVarP(&launchShell, "shell", "s", "", "Explicit shell to launch")
 	rootCmd.AddCommand(launchCmd)
 }

@@ -20,10 +20,14 @@ import (
 )
 
 var (
-	sessionUUID string
+	sessionUUID       string
+	userShellOverride string
 )
 
 func getUserShell() string {
+	if userShellOverride != "" {
+		return userShellOverride
+	}
 	u, err := user.Current()
 	if err == nil {
 		// Try getent first for LDAP/NIS compatibility
@@ -168,6 +172,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.Flags().StringVar(&sessionUUID, "session", "", "UUID of the session to record")
+	rootCmd.Flags().StringVar(&userShellOverride, "shell", "", "Explicit shell to launch")
 }
 
 func main() {

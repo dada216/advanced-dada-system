@@ -107,3 +107,91 @@ PS0="\033]133;C\007"
 		t.Fatalf("Command history did not contain 'my_secret_test_command'. Got: %v", commands)
 	}
 }
+
+func TestIntegrationCommandHistoryZsh(t *testing.T) {
+	uuidStr := uuid.New().String()
+	db, err := Open(uuidStr)
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	defer db.Close()
+	defer os.Remove(uuidStr + ".db")
+	defer os.Remove(uuidStr + ".db-shm")
+	defer os.Remove(uuidStr + ".db-wal")
+
+	// Set up PTY with bash (we simulate zsh hook output manually)
+	cmd := exec.Command("bash", "--noprofile", "--norc")
+	ptmx, err := pty.Start(cmd)
+	if err != nil {
+		t.Fatalf("pty.Start failed: %v", err)
+	}
+	defer ptmx.Close()
+
+	scanner := ansi.NewOSCScanner(db)
+	done := make(chan struct{})
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, err := ptmx.Read(buf)
+			if n > 0 {
+				_ = db.WriteChunk(buf[:n])
+				_, _ = scanner.Write(buf[:n])
+			}
+			if err != nil {
+				if err == io.EOF || strings.Contains(err.Error(), "input/output error") {
+					close(done)
+					return
+				}
+			}
+		}
+	}()
+
+	// Simulate Zsh hook where ZLE redraws prompt right before execution
+	zshSimulation := `
+# A normal prompt starts
+printf "\033]133;D;0\007"
+printf "\033]133;A\007"
+printf "\033]133;B\007"
+# User types a command
+printf "echo my_zsh_redrawn_command\n"
+# ZLE redraws the prompt, wiping the PTY buffer!
+printf "\033]133;B\007"
+# The preexec hook runs, sending the command text explicitly
+printf "\033]133;C;echo my_zsh_redrawn_command\007"
+# Command executes
+echo my_zsh_redrawn_command
+exit
+`
+	_, _ = ptmx.Write([]byte(zshSimulation))
+
+	_ = cmd.Wait()
+	<-done
+
+	rows, err := db.db.Query("SELECT command_text FROM command_history")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+	defer rows.Close()
+
+	var commands []string
+	for rows.Next() {
+		var text string
+		if err := rows.Scan(&text); err != nil {
+			t.Fatalf("Scan failed: %v", err)
+		}
+		commands = append(commands, text)
+		t.Logf("Found command in history: %q", text)
+	}
+
+	found := false
+	for _, cmd := range commands {
+		if strings.Contains(cmd, "echo my_zsh_redrawn_command") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Fatalf("Command history did not contain 'echo my_zsh_redrawn_command'. Got: %v", commands)
+	}
+}

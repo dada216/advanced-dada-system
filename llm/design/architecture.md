@@ -149,7 +149,7 @@ Agents must follow standard gitflow practices for branching and committing. Comm
 ### Privileged Host Execution and Auditing
 When an agent requires execution of commands directly on the user's host (e.g., executing system-level package upgrades via `dnf`), the execution MUST be routed exclusively through the `scripts/host-exec.sh` wrapper script. This guarantees:
 1. **Security & Auditing:** Every host-level command is rigorously intercepted and recorded in a human-readable format to `docs/security/host_exec.log`.
-2. **Namespace Injection:** The agent container leverages `--privileged` and `--pid=host` to perform an `nsenter` breakout. This eliminates the need for complex SSH agent configurations or `sudoers` password interventions, allowing autonomous, transparent, and strictly audited host interactions.
+2. **Systemd-run Breakout:** The agent container leverages the user's mounted D-Bus socket to perform a `systemd-run` breakout natively into the host's user session. This provides a clean, native execution path for autonomous, transparent, and strictly audited host interactions.
 
 ---
 

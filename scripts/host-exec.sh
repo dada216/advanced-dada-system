@@ -1,6 +1,6 @@
 #!/bin/bash
 # host-exec.sh
-# Wraps nsenter to execute commands natively on the host system from within the container.
+# Wraps systemd-run to execute commands natively on the host system from within the container.
 # All commands are rigorously audited to docs/security/host_exec.log for transparency.
 
 if [ "$#" -eq 0 ]; then
@@ -19,10 +19,9 @@ mkdir -p "$(dirname "$LOG_FILE")"
 echo "[${TIMESTAMP}] HOST EXECUTION AUDIT EVENT" >> "$LOG_FILE"
 echo "  COMMAND   : ${COMMAND}" >> "$LOG_FILE"
 
-echo "[host-exec] Requesting host execution via nsenter..."
-# nsenter breaks out of the container to execute on the host
-# REQUIRES container to be run with --privileged and --pid=host
-nsenter -t 1 -m -u -i -n -p -- bash -c "${COMMAND}"
+echo "[host-exec] Requesting host execution via systemd-run (D-Bus)..."
+# Executing natively on the host user session via systemd D-Bus
+systemd-run --user --wait --pipe --quiet bash -c "${COMMAND}"
 EXIT_CODE=$?
 
 echo "  EXIT_CODE : ${EXIT_CODE}" >> "$LOG_FILE"

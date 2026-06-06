@@ -29,7 +29,7 @@ v1.0.0 implemented! Local sessions, raw recording, FTS5 dual-write, federated se
 
 - **AUTHORIZED PACKAGE**: The agent is authorized to execute commands directly on the user's host machine ONLY by exclusively routing them through the `scripts/host-exec.sh` wrapper script. No exceptions.
 - **AUDIT TRAIL**: The `host-exec.sh` script automatically intercepts the command and generates a strict, human-readable audit trail logged directly to `docs/security/host_exec.log`.
-- **CONTAINER STATE**: In order for this functionality to operate, the agent's execution container MUST be initialized with the `--privileged` and `--pid=host` podman/docker flags to permit `nsenter` namespace injection.
+- **CONTAINER STATE**: In order for this functionality to operate, the agent's execution container MUST be initialized with the host's D-Bus socket mounted (e.g., `-v /run/user/1000/bus:/run/user/1000/bus -e DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus`) to permit `systemd-run` host execution.
 ## Architecture
 
 Two CLI binaries (may ship as a single executable with subcommands):

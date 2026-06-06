@@ -129,6 +129,14 @@ func (d *DB) UpdateSessionStatus(uuid, status string) error {
 	return nil
 }
 
+func (d *DB) RenameSession(uuid, newName string) error {
+	_, err := d.db.Exec(`UPDATE sessions SET name = ? WHERE uuid = ?`, newName, uuid)
+	if err != nil {
+		return fmt.Errorf("failed to rename session: %w", err)
+	}
+	return nil
+}
+
 func (d *DB) UpdateSessionProfile(uuid, profileName string) error {
 	_, err := d.db.Exec(`UPDATE sessions SET profile_name = ? WHERE uuid = ?`, profileName, uuid)
 	if err != nil {

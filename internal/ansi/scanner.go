@@ -101,6 +101,10 @@ func (s *OSCScanner) Write(p []byte) (n int, err error) {
 			case 'C':
 				s.state = 3
 				s.startTs = time.Now()
+				if len(markerPayload) > 2 && markerPayload[1] == ';' {
+					s.commandBuf.Reset()
+					s.commandBuf.Write(markerPayload[2:])
+				}
 			case 'D':
 				s.state = 0
 				exitCode := 0

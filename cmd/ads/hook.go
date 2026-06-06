@@ -30,6 +30,9 @@ _ads_precmd() {
     local exit_code=$?
     printf "\033]133;D;%s\007" "$exit_code"
     printf "\033]133;A\007"
+    if [[ "$PROMPT" != *$'%{\e]133;B\a%}'* ]]; then
+        PROMPT=$PROMPT$'%{\e]133;B\a%}'
+    fi
 }
 _ads_preexec() {
     printf "\033]133;C\007"
@@ -38,8 +41,6 @@ _ads_preexec() {
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd _ads_precmd
 add-zsh-hook preexec _ads_preexec
-
-PROMPT=$PROMPT$'%{\e]133;B\a%}'
 `)
 		} else {
 			fmt.Printf("Shell '%s' is not supported yet.\n", shell)

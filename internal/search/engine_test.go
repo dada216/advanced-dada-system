@@ -41,7 +41,7 @@ func TestFederatedSearchAllSessions(t *testing.T) {
 	}
 	defer dbA.Close()
 
-	err = dbA.WriteChunk([]byte("This is a unique keyword unique_to_session_a"))
+	err = dbA.WriteChunk([]byte("This is a unique keyword unique_to_session_a"), 1)
 	if err != nil {
 		t.Fatalf("Failed to write to session A: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestFederatedSearchAllSessions(t *testing.T) {
 	}
 	defer dbB.Close()
 
-	err = dbB.WriteChunk([]byte("This is a unique keyword unique_to_session_b"))
+	err = dbB.WriteChunk([]byte("This is a unique keyword unique_to_session_b"), 1)
 	if err != nil {
 		t.Fatalf("Failed to write to session B: %v", err)
 	}

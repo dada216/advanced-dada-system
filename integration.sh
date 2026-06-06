@@ -14,9 +14,52 @@ echo "Checking DB..."
 if go run -mod=vendor -tags sqlite_fts5 test/verify.go "$UUID"; then
     echo "Verification passed."
     
-    echo "Testing session deletion..."
-    if ! ./bin/ads delete "$SESSION_NAME"; then
-        echo "FAILURE: Could not delete session '$SESSION_NAME' via ads CLI."
+    echo "Testing Zsh integration..."
+    ZSH_SESSION="test-session-zsh-$RANDOM"
+    ZSH_UUID=$(./bin/ads new "$ZSH_SESSION" | grep UUID | awk '{print $2}')
+    echo "Created Zsh session: $ZSH_UUID"
+    
+    # Run ads-shell explicitly telling it to use zsh
+    echo -e "echo 'zsh input capture test'\nexit\n" | ./bin/ads-shell --session "$ZSH_UUID" --shell "zsh"
+    
+    ZSH_JSON_OUT=$(./bin/ads search "zsh input capture test" --json)
+    if echo "$ZSH_JSON_OUT" | grep -q '"SessionName":'; then
+        echo "Zsh test passed (search found captured content)."
+    else
+        echo "FAILURE: Zsh input/output not captured."
+        echo "Got: $ZSH_JSON_OUT"
+        exit 1
+    fi
+    
+    echo "Verifying io_stream direction capturing..."
+    cat << 'EOF' > verify_db.py
+import sqlite3, sys
+db = sys.argv[1]
+conn = sqlite3.connect(db)
+cursor = conn.cursor()
+cursor.execute("SELECT COUNT(*) FROM io_stream WHERE direction=0;")
+in_count = cursor.fetchone()[0]
+cursor.execute("SELECT COUNT(*) FROM io_stream WHERE direction=1;")
+out_count = cursor.fetchone()[0]
+if in_count > 0 and out_count > 0:
+    print("Verified direction tracking (in: {}, out: {})".format(in_count, out_count))
+    sys.exit(0)
+else:
+    print("Missing direction data (in: {}, out: {})".format(in_count, out_count))
+    sys.exit(1)
+EOF
+    
+    if python3 verify_db.py "$HOME/.local/share/ads/sessions/$ZSH_UUID.db"; then
+        echo "Direction verification passed."
+    else
+        echo "FAILURE: Direction tracking verification failed."
+        exit 1
+    fi
+    rm verify_db.py
+    
+    echo "Testing glob session deletion..."
+    if ! ./bin/ads delete "$SESSION_NAME*"; then
+        echo "FAILURE: Could not delete sessions via glob pattern."
         exit 1
     fi
 

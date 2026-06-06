@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
+
 	"os"
 	"os/exec"
 	"os/signal"
@@ -141,7 +141,18 @@ var rootCmd = &cobra.Command{
 
 		// Copy from stdin to pty (input)
 		go func() {
-			_, _ = io.Copy(ptmx, os.Stdin)
+			buf := make([]byte, 4096)
+			for {
+				n, err := os.Stdin.Read(buf)
+				if n > 0 {
+					chunk := buf[:n]
+					_ = db.WriteChunk(chunk, 0)
+					_, _ = ptmx.Write(chunk)
+				}
+				if err != nil {
+					break
+				}
+			}
 		}()
 
 		// Copy from pty to stdout and record
@@ -153,7 +164,7 @@ var rootCmd = &cobra.Command{
 				chunk := buf[:n]
 
 				// Write to database
-				_ = db.WriteChunk(chunk)
+				_ = db.WriteChunk(chunk, 1)
 				_, _ = scanner.Write(chunk)
 
 				// Write to stdout

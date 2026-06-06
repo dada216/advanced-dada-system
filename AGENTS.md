@@ -13,6 +13,7 @@ v1.0.0 implemented! Local sessions, raw recording, FTS5 dual-write, federated se
   4. Every bumped version MUST have a summary file tracked under `docs/updates/vX.Y.Z.md` describing improvements, bugfixes, and design choices.
   5. Major version bumps require extensive documentation.
   6. The `Makefile` includes a `make release` command to create a Git tag for the latest version.
+  7. At every release, the agent MUST run the `./upgrade.sh` script to build and install the RPM package locally, explicitly asking the user for `sudo` permission once to do so.
 - **BUG TRACKING & GIT BRANCHING**:
   1. All bug reports MUST be documented as `.md` files in the `docs/bugs/` directory BEFORE writing any code.
   2. Fixes MUST be developed in a dedicated isolated Git branch (e.g., `git checkout -b fix/<bug-name>`).
@@ -20,6 +21,7 @@ v1.0.0 implemented! Local sessions, raw recording, FTS5 dual-write, federated se
   4. Switch back to the main branch (`git checkout main`) and cleanly merge the fix branch (`git merge --no-ff fix/<bug-name>`) to integrate it into the mainline history.
 - **CODING STYLE**: You must strictly adhere to the guidelines codified in `llm/design/coding_style.md` (derived from Effective Go).
 - **MANDATORY**: ALWAYS run the `Makefile` verification pipeline (`make tidy`, `make lint`, `make build`, and `make test`/`make test-integration`) before committing code or declaring a milestone complete.
+- **END-TO-END TESTS**: End-to-end tests MUST always be performed. Assume you are running in a container with `zsh` available, and build extensive tests around this environment to ensure robust integration.
 - Do not bypass `golangci-lint` errors. If formatting (`gofmt`) or code logic fails, correct it proactively.
 - All code commits must be atomic and strictly adhere to the architecture laid out in `llm/design/architecture.md`.
 

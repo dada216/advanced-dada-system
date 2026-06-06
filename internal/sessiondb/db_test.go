@@ -42,7 +42,7 @@ func TestIntegrationCommandHistory(t *testing.T) {
 		for {
 			n, err := ptmx.Read(buf)
 			if n > 0 {
-				_ = db.WriteChunk(buf[:n])
+				_ = db.WriteChunk(buf[:n], 1)
 				_, _ = scanner.Write(buf[:n])
 			}
 			if err != nil {
@@ -135,7 +135,7 @@ func TestIntegrationCommandHistoryZsh(t *testing.T) {
 		for {
 			n, err := ptmx.Read(buf)
 			if n > 0 {
-				_ = db.WriteChunk(buf[:n])
+				_ = db.WriteChunk(buf[:n], 1)
 				_, _ = scanner.Write(buf[:n])
 			}
 			if err != nil {
@@ -233,7 +233,7 @@ func TestSessionDBMisc(t *testing.T) {
 	}
 
 	// Test WriteChunk empty
-	err = db.WriteChunk([]byte{})
+	err = db.WriteChunk([]byte{}, 1)
 	if err != nil {
 		t.Fatalf("WriteChunk empty failed: %v", err)
 	}

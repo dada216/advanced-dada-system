@@ -1,4 +1,4 @@
-.PHONY: build lint test clean tidy install install-konsole
+.PHONY: build lint test clean tidy install install-konsole rpm
 
 all: lint test build
 
@@ -55,3 +55,12 @@ install: build
 install-konsole:
 	@echo "Installing Konsole profile..."
 	@bash scripts/install-konsole.sh
+
+rpm: build
+	@echo "Building RPM package..."
+	@mkdir -p build/rpm/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+	@VERSION=$$(grep -Eo 'Version = "[^"]+"' cmd/ads/version.go | cut -d'"' -f2 | sed 's/^v//') && \
+	tar --exclude='./build' --exclude='./bin' --exclude='./.git' -czf build/rpm/SOURCES/ads-$$VERSION.tar.gz . && \
+	cat packaging/rpm/ads.spec | sed "s/{{VERSION}}/$$VERSION/g" > build/rpm/SPECS/ads.spec && \
+	rpmbuild -bb --define "_topdir $$(pwd)/build/rpm" build/rpm/SPECS/ads.spec
+	@echo "RPM package is available in build/rpm/RPMS/"

@@ -16,8 +16,11 @@ func (s *SearchPlugin) RunTask(args map[string]string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("missing 'query' argument")
 	}
+	inputOnly := args["input"] == "true"
+	outputOnly := args["output"] == "true"
+	tag := args["tag"]
 
-	results, err := search.Query(query)
+	results, err := search.Query(query, inputOnly, outputOnly, tag)
 	if err != nil {
 		return "", err
 	}

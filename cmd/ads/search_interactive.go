@@ -67,7 +67,7 @@ func doSearch(query string) tea.Cmd {
 		if query == "" {
 			return searchResultMsg(nil)
 		}
-		res, err := plugin.CallSearchPlugin(query)
+		res, err := plugin.CallSearchPlugin(query, false, false, "")
 		if err != nil {
 			return errMsg(err)
 		}

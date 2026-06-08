@@ -21,7 +21,7 @@ type Result struct {
 	Date        string
 }
 
-func Query(term string) ([]Result, error) {
+func Query(term string, inputOnly bool, outputOnly bool, tag string) ([]Result, error) {
 	appDir, err := config.InitAppDataDir()
 	if err != nil {
 		return nil, err
@@ -41,11 +41,17 @@ func Query(term string) ([]Result, error) {
 	var results []Result
 
 	// Use ANSI color codes for highlight markers: Red text for matches
-	query := `SELECT fts_index.rowid, io_stream.ts, highlight(fts_index, 0, "` + "\033[31m" + `", "` + "\033[0m" + `") 
+	baseQuery := `SELECT fts_index.rowid, io_stream.ts, highlight(fts_index, 0, "` + "\033[31m" + `", "` + "\033[0m" + `") 
               FROM fts_index 
               JOIN io_stream ON fts_index.rowid = io_stream.id
-              WHERE fts_index MATCH ? 
-              ORDER BY io_stream.ts DESC LIMIT 20`
+              WHERE fts_index MATCH ?`
+
+	if inputOnly {
+		baseQuery += ` AND io_stream.direction = 0`
+	} else if outputOnly {
+		baseQuery += ` AND io_stream.direction = 1`
+	}
+	baseQuery += ` ORDER BY io_stream.ts DESC LIMIT 20`
 
 	for _, s := range sessions {
 		// Use _busy_timeout to prevent SQLITE_BUSY silent skips when ads-recorder is actively writing
@@ -57,10 +63,19 @@ func Query(term string) ([]Result, error) {
 			continue
 		}
 
+		if tag != "" {
+			var count int
+			err := db.QueryRow("SELECT COUNT(*) FROM metadata WHERE customer = ? OR server = ? OR project = ?", tag, tag, tag).Scan(&count)
+			if err != nil || count == 0 {
+				db.Close()
+				continue
+			}
+		}
+
 		cleanTerm := strings.ReplaceAll(term, "\"", "")
 		ftsTerm := "\"" + cleanTerm + "\"*"
 
-		rows, err := db.Query(query, ftsTerm)
+		rows, err := db.Query(baseQuery, ftsTerm)
 		if err != nil {
 			// Don't warn if the table just doesn't exist yet, but warn for other errors (like locks)
 			if err.Error() != "no such table: fts_index" {

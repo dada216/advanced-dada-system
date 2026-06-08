@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "v5.3.0"
-var Codename = "Quokka"
+var Version = "v5.4.0"
+var Codename = "Red Panda"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",

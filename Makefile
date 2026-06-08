@@ -1,6 +1,6 @@
-.PHONY: build lint test clean tidy install install-konsole rpm
+.PHONY: build lint test clean tidy install install-konsole rpm check-secrets
 
-all: lint test build
+all: lint test check-secrets build
 
 build:
 	go build -mod=vendor -tags sqlite_fts5 -o bin/ads ./cmd/ads
@@ -13,6 +13,16 @@ lint:
 
 test:
 	go test -mod=vendor -tags sqlite_fts5 -v ./...
+
+check-secrets:
+	@echo "Scanning for secrets using gitleaks..."
+	@if ! command -v gitleaks >/dev/null 2>&1; then \
+		echo "gitleaks not found. Downloading temporarily..." && \
+		curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar xz -C /tmp gitleaks && \
+		/tmp/gitleaks detect --source . -v; \
+	else \
+		gitleaks detect --source . -v; \
+	fi
 
 test-integration:
 	bash integration.sh

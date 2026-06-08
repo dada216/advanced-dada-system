@@ -20,7 +20,8 @@ v1.0.0 implemented! Local sessions, raw recording, FTS5 dual-write, federated se
   3. Once the fix is built and verified via the `Makefile` pipeline, commit the fix to that specific branch.
   4. Switch back to the main branch (`git checkout main`) and cleanly merge the fix branch (`git merge --no-ff fix/<bug-name>`) to integrate it into the mainline history.
 - **CODING STYLE**: You must strictly adhere to the guidelines codified in `llm/design/coding_style.md` (derived from Effective Go).
-- **MANDATORY**: ALWAYS run the `Makefile` verification pipeline (`make tidy`, `make lint`, `make build`, and `make test`/`make test-integration`) before committing code or declaring a milestone complete.
+- **MANDATORY**: ALWAYS run the `Makefile` verification pipeline (`make tidy`, `make lint`, `make check-secrets`, `make build`, and `make test`/`make test-integration`) before committing code or declaring a milestone complete.
+- **SECRET SCANNING**: You MUST run `make check-secrets` (which leverages `gitleaks`) to check for exposed secrets before pushing any branches to the remote repository.
 - **END-TO-END TESTS**: End-to-end tests MUST always be performed. Assume you are running in a container with `zsh` available, and build extensive tests around this environment to ensure robust integration.
 - Do not bypass `golangci-lint` errors. If formatting (`gofmt`) or code logic fails, correct it proactively.
 - All code commits must be atomic and strictly adhere to the architecture laid out in `llm/design/architecture.md`.

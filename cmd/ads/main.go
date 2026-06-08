@@ -233,12 +233,45 @@ var runCmd = &cobra.Command{
 }
 
 var searchCmd = &cobra.Command{
-	Use:   "search [query]",
+	Use:   "search [flags] [query]",
 	Short: "Search across all recorded sessions",
-	Args:  cobra.ExactArgs(1),
+	DisableFlagParsing: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		term := args[0]
-		results, err := plugin.CallSearchPlugin(term)
+		var searchJSON bool
+		var inputOnly bool
+		var outputOnly bool
+		var tag string
+		var terms []string
+
+		for i := 0; i < len(args); i++ {
+			arg := args[i]
+			if arg == "--help" || arg == "-h" {
+				_ = cmd.Help()
+				return
+			} else if arg == "--json" {
+				searchJSON = true
+			} else if arg == "--input" {
+				inputOnly = true
+			} else if arg == "--output" {
+				outputOnly = true
+			} else if arg == "--tag" && i+1 < len(args) {
+				tag = args[i+1]
+				i++
+			} else if strings.HasPrefix(arg, "--tag=") {
+				tag = strings.TrimPrefix(arg, "--tag=")
+			} else {
+				terms = append(terms, arg)
+			}
+		}
+
+		if len(terms) == 0 {
+			fmt.Fprintf(os.Stderr, "Error: missing search query\n")
+			_ = cmd.Help()
+			os.Exit(1)
+		}
+
+		term := strings.Join(terms, " ")
+		results, err := plugin.CallSearchPlugin(term, inputOnly, outputOnly, tag)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Search failed: %v\n", err)
 			os.Exit(1)
@@ -415,6 +448,9 @@ func init() {
 	newCmd.Flags().StringVarP(&profileName, "profile", "p", "default", "Tmux profile to use")
 	runCmd.Flags().StringVarP(&runShell, "shell", "s", "", "Explicit shell to launch")
 	searchCmd.Flags().BoolVar(&searchJSON, "json", false, "Output results in JSON format")
+	searchCmd.Flags().Bool("input", false, "Only search in user inputs")
+	searchCmd.Flags().Bool("output", false, "Only search in command outputs")
+	searchCmd.Flags().String("tag", "", "Search only in sessions matching this customer, server, or project name")
 
 	authCmd.AddCommand(authTestCmd)
 

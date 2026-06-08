@@ -53,8 +53,14 @@ func CallPlugin(pluginName string, args map[string]string) (string, error) {
 	return service.RunTask(args)
 }
 
-func CallSearchPlugin(query string) ([]search.Result, error) {
-	resStr, err := CallPlugin("ads-plugin-search", map[string]string{"query": query})
+func CallSearchPlugin(query string, inputOnly bool, outputOnly bool, tag string) ([]search.Result, error) {
+	args := map[string]string{
+		"query":  query,
+		"input":  fmt.Sprintf("%v", inputOnly),
+		"output": fmt.Sprintf("%v", outputOnly),
+		"tag":    tag,
+	}
+	resStr, err := CallPlugin("ads-plugin-search", args)
 	if err != nil {
 		return nil, err
 	}
